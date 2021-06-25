@@ -7,12 +7,24 @@ import (
 
 var empty = make([]byte, 1)
 
-func ExtractPkScriptGenesisIdAndAddressPkh(pkscript []byte) (isNFT bool, codeHash, genesisId, addressPkh, metaTxId []byte, name, symbol string, value, decimal uint64) {
+func ExtractPkScriptGenesisIdAndAddressPkh(pkscript []byte) (txo *TxoData) {
+	txo = &TxoData{
+		IsNFT:      false,
+		CodeHash:   empty,
+		GenesisId:  empty,
+		AddressPkh: empty,
+		MetaTxId:   empty,
+		Name:       "",
+		Symbol:     "",
+		DataValue:  0,
+		Decimal:    0,
+	}
+
 	scriptLen := len(pkscript)
 	if scriptLen < 1024 {
-		return false, empty, empty, empty, empty, "", "", 0, 0
+		return txo
 	}
-	metaTxId = empty
+
 	dataLen := 0
 	genesisIdLen := 0
 	genesisOffset := scriptLen - 8 - 4
@@ -49,12 +61,12 @@ func ExtractPkScriptGenesisIdAndAddressPkh(pkscript []byte) (isNFT bool, codeHas
 		symbolOffset -= genesisIdLen
 		nameOffset -= genesisIdLen
 
-		decimal = uint64(pkscript[decimalOffset])
-		symbol = string(bytes.TrimRight(pkscript[symbolOffset:symbolOffset+10], "\x00"))
-		name = string(bytes.TrimRight(pkscript[nameOffset:nameOffset+20], "\x00"))
+		txo.Decimal = uint64(pkscript[decimalOffset])
+		txo.Symbol = string(bytes.TrimRight(pkscript[symbolOffset:symbolOffset+10], "\x00"))
+		txo.Name = string(bytes.TrimRight(pkscript[nameOffset:nameOffset+20], "\x00"))
 	} else if pkscript[scriptLen-1] < 2 && pkscript[scriptLen-37-1] == 37 && pkscript[scriptLen-37-1-40-1] == 40 && pkscript[scriptLen-37-1-40-1-1] == OP_RETURN {
 		// nft issue
-		isNFT = true
+		txo.IsNFT = true
 		genesisIdLen = 40
 		genesisOffset = scriptLen - 37 - 1 - genesisIdLen
 		valueOffset = scriptLen - 1 - 8
@@ -63,7 +75,7 @@ func ExtractPkScriptGenesisIdAndAddressPkh(pkscript []byte) (isNFT bool, codeHas
 		dataLen = 1 + 1 + 1 + 37 // opreturn + pushdata + pushdata + data
 	} else if pkscript[scriptLen-1] == 1 && pkscript[scriptLen-61-1] == 61 && pkscript[scriptLen-61-1-40-1] == 40 && pkscript[scriptLen-61-1-40-1-1] == OP_RETURN {
 		// nft transfer
-		isNFT = true
+		txo.IsNFT = true
 		genesisIdLen = 40
 		genesisOffset = scriptLen - 61 - 1 - genesisIdLen
 		metaTxIdOffset := scriptLen - 1 - 32
@@ -71,20 +83,20 @@ func ExtractPkScriptGenesisIdAndAddressPkh(pkscript []byte) (isNFT bool, codeHas
 		addressOffset = scriptLen - 1 - 32 - 8 - 20
 
 		dataLen = 1 + 1 + 1 + 61 // opreturn + pushdata + pushdata + data
-		metaTxId = make([]byte, 32)
-		copy(metaTxId, pkscript[metaTxIdOffset:metaTxIdOffset+32])
+		txo.MetaTxId = make([]byte, 32)
+		copy(txo.MetaTxId, pkscript[metaTxIdOffset:metaTxIdOffset+32])
 	} else {
-		return false, empty, empty, empty, empty, "", "", 0, 0
+		return txo
 	}
 
-	genesisId = make([]byte, genesisIdLen)
-	addressPkh = make([]byte, 20)
-	copy(genesisId, pkscript[genesisOffset:genesisOffset+genesisIdLen])
-	copy(addressPkh, pkscript[addressOffset:addressOffset+20])
+	txo.GenesisId = make([]byte, genesisIdLen)
+	txo.AddressPkh = make([]byte, 20)
+	copy(txo.GenesisId, pkscript[genesisOffset:genesisOffset+genesisIdLen])
+	copy(txo.AddressPkh, pkscript[addressOffset:addressOffset+20])
 
-	value = binary.LittleEndian.Uint64(pkscript[valueOffset : valueOffset+8])
+	txo.DataValue = binary.LittleEndian.Uint64(pkscript[valueOffset : valueOffset+8])
 
-	codeHash = GetHash160(pkscript[:scriptLen-genesisIdLen-dataLen])
+	txo.CodeHash = GetHash160(pkscript[:scriptLen-genesisIdLen-dataLen])
 
-	return isNFT, codeHash, genesisId, addressPkh, metaTxId, name, symbol, value, decimal
+	return txo
 }

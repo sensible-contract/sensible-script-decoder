@@ -1,20 +1,32 @@
 package script
 
-func ExtractPkScriptForTxo(Pkscript, scriptType []byte) (isNFT bool, codeHash, genesisId, addressPkh, metaTxId []byte, name, symbol string, value, decimal uint64) {
+func ExtractPkScriptForTxo(Pkscript, scriptType []byte) (txo *TxoData) {
+	txo = &TxoData{
+		IsNFT:      false,
+		CodeHash:   empty,
+		GenesisId:  empty,
+		AddressPkh: empty,
+		MetaTxId:   empty,
+		Name:       "",
+		Symbol:     "",
+		DataValue:  0,
+		Decimal:    0,
+	}
+
 	if isPubkeyHash(scriptType) {
-		addressPkh = make([]byte, 20)
-		copy(addressPkh, Pkscript[3:23])
-		return false, empty, empty, addressPkh, empty, "", "", 0, 0
+		txo.AddressPkh = make([]byte, 20)
+		copy(txo.AddressPkh, Pkscript[3:23])
+		return txo
 	}
 
 	if isPayToScriptHash(scriptType) {
-		addressPkh = GetHash160(Pkscript[2 : len(Pkscript)-1])
-		return false, empty, empty, addressPkh, empty, "", "", 0, 0
+		txo.AddressPkh = GetHash160(Pkscript[2 : len(Pkscript)-1])
+		return txo
 	}
 
 	if isPubkey(scriptType) {
-		addressPkh = GetHash160(Pkscript[1 : len(Pkscript)-1])
-		return false, empty, empty, addressPkh, empty, "", "", 0, 0
+		txo.AddressPkh = GetHash160(Pkscript[1 : len(Pkscript)-1])
+		return txo
 	}
 
 	// if isMultiSig(scriptType) {
