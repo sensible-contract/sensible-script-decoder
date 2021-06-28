@@ -1,7 +1,14 @@
 package script
 
+const (
+	CodeType_NONE   int = 0
+	CodeType_FT     int = 1
+	CodeType_UNIQUE int = 2
+	CodeType_NFT    int = 3
+)
+
 type TxoData struct {
-	IsNFT      bool
+	CodeType   int
 	CodeHash   []byte
 	GenesisId  []byte
 	AddressPkh []byte

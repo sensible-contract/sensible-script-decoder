@@ -63,6 +63,7 @@ func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	symbolOffset := decimalOffset - 1 - 10
 	nameOffset := symbolOffset - 20
 
+	txo.CodeType = CodeType_FT
 	txo.Decimal = uint64(scriptPk[decimalOffset])
 	txo.Symbol = string(bytes.TrimRight(scriptPk[symbolOffset:symbolOffset+10], "\x00"))
 	txo.Name = string(bytes.TrimRight(scriptPk[nameOffset:nameOffset+20], "\x00"))
@@ -79,6 +80,7 @@ func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 }
 
 func decodeUnique(scriptLen int, scriptPk []byte, txo *TxoData) bool {
+	txo.CodeType = CodeType_UNIQUE
 	genesisIdLen := 36 // ft unique
 	protoTypeOffset := scriptLen - 8 - 4
 	genesisOffset := protoTypeOffset - genesisIdLen
@@ -103,7 +105,7 @@ func decodeUnique(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 
 func decodeNFTIssue(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	// nft issue
-	txo.IsNFT = true
+	txo.CodeType = CodeType_NFT
 	genesisIdLen := 40
 	genesisOffset := scriptLen - 37 - 1 - genesisIdLen
 	tokenIdxOffset := scriptLen - 1 - 8
@@ -124,7 +126,7 @@ func decodeNFTIssue(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 
 func decodeNFTTransfer(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	// nft transfer
-	txo.IsNFT = true
+	txo.CodeType = CodeType_NFT
 	genesisIdLen := 40
 	genesisOffset := scriptLen - 61 - 1 - genesisIdLen
 	metaTxIdOffset := scriptLen - 1 - 32

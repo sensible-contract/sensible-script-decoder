@@ -14,7 +14,7 @@ func TestDecode(t *testing.T) {
 		script, _ := hex.DecodeString(scriptHex)
 
 		txo := &TxoData{
-			IsNFT:      false,
+			CodeType:   CodeType_NONE,
 			CodeHash:   empty,
 			GenesisId:  empty,
 			AddressPkh: empty,

@@ -2,7 +2,7 @@ package script
 
 func ExtractPkScriptForTxo(Pkscript, scriptType []byte) (txo *TxoData) {
 	txo = &TxoData{
-		IsNFT:      false,
+		CodeType:   CodeType_NONE,
 		CodeHash:   empty,
 		GenesisId:  empty,
 		AddressPkh: empty,
