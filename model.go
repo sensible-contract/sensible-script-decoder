@@ -1,14 +1,14 @@
 package script
 
 const (
-	CodeType_NONE   int = 0
-	CodeType_FT     int = 1
-	CodeType_UNIQUE int = 2
-	CodeType_NFT    int = 3
+	CodeType_NONE   uint32 = 0
+	CodeType_FT     uint32 = 1
+	CodeType_UNIQUE uint32 = 2
+	CodeType_NFT    uint32 = 3
 )
 
 type TxoData struct {
-	CodeType   int
+	CodeType   uint32
 	CodeHash   []byte
 	GenesisId  []byte
 	AddressPkh []byte
