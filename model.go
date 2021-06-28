@@ -5,9 +5,12 @@ type TxoData struct {
 	CodeHash   []byte
 	GenesisId  []byte
 	AddressPkh []byte
-	MetaTxId   []byte
-	Name       string // ft name
-	Symbol     string // ft symbol
-	DataValue  uint64 // ft amount / nft tokenIdx
-	Decimal    uint64 // ft decimal
+
+	MetaTxId []byte // nft metatxid
+	TokenIdx uint64 // nft tokenIdx
+
+	Name    string // ft name
+	Symbol  string // ft symbol
+	Amount  uint64 // ft amount
+	Decimal uint64 // ft decimal
 }

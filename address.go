@@ -6,11 +6,14 @@ func ExtractPkScriptForTxo(Pkscript, scriptType []byte) (txo *TxoData) {
 		CodeHash:   empty,
 		GenesisId:  empty,
 		AddressPkh: empty,
-		MetaTxId:   empty,
-		Name:       "",
-		Symbol:     "",
-		DataValue:  0,
-		Decimal:    0,
+
+		MetaTxId: empty,
+		TokenIdx: 0,
+
+		Name:    "",
+		Symbol:  "",
+		Amount:  0,
+		Decimal: 0,
 	}
 
 	if isPubkeyHash(scriptType) {
@@ -32,8 +35,9 @@ func ExtractPkScriptForTxo(Pkscript, scriptType []byte) (txo *TxoData) {
 	// if isMultiSig(scriptType) {
 	// 	return Pkscript[:]
 	// }
+	DecodeSensibleTxo(Pkscript, txo)
 
-	return ExtractPkScriptGenesisIdAndAddressPkh(Pkscript)
+	return txo
 }
 
 func GetLockingScriptType(pkscript []byte) (scriptType []byte) {

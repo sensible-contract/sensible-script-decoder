@@ -47,3 +47,17 @@ func SafeDecodeVarIntForScript(raw []byte) (cnt uint, cnt_size uint) {
 
 	return 0, 0
 }
+
+func getVarIntLen(length uint64) int {
+	res := 0
+	if length <= 0x4b {
+		res = 0
+	} else if length <= 0xff {
+		res = 1
+	} else if length <= 0xffff {
+		res = 2
+	} else {
+		res = 4
+	}
+	return res
+}

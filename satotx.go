@@ -7,96 +7,142 @@ import (
 
 var empty = make([]byte, 1)
 
-func ExtractPkScriptGenesisIdAndAddressPkh(pkscript []byte) (txo *TxoData) {
-	txo = &TxoData{
-		IsNFT:      false,
-		CodeHash:   empty,
-		GenesisId:  empty,
-		AddressPkh: empty,
-		MetaTxId:   empty,
-		Name:       "",
-		Symbol:     "",
-		DataValue:  0,
-		Decimal:    0,
-	}
+func hasSensibleFlag(scriptPk []byte) bool {
+	return bytes.HasSuffix(scriptPk, []byte("sensible")) || bytes.HasSuffix(scriptPk, []byte("oraclesv"))
+}
 
-	scriptLen := len(pkscript)
+func DecodeSensibleTxo(scriptPk []byte, txo *TxoData) bool {
+	scriptLen := len(scriptPk)
 	if scriptLen < 1024 {
-		return txo
+		return false
 	}
 
+	ret := false
+	if hasSensibleFlag(scriptPk) {
+		protoTypeOffset := scriptLen - 8 - 4
+		if scriptPk[protoTypeOffset] == 1 { // PROTO_TYPE == 1
+			ret = decodeFT(scriptLen, scriptPk, txo)
+		} else if scriptPk[protoTypeOffset] == 2 { // PROTO_TYPE == 2
+			ret = decodeUnique(scriptLen, scriptPk, txo)
+		}
+	} else if scriptPk[scriptLen-1] < 2 && scriptPk[scriptLen-37-1] == 37 && scriptPk[scriptLen-37-1-40-1] == 40 && scriptPk[scriptLen-37-1-40-1-1] == OP_RETURN {
+		ret = decodeNFTIssue(scriptLen, scriptPk, txo)
+	} else if scriptPk[scriptLen-1] == 1 && scriptPk[scriptLen-61-1] == 61 && scriptPk[scriptLen-61-1-40-1] == 40 && scriptPk[scriptLen-61-1-40-1-1] == OP_RETURN {
+		ret = decodeNFTTransfer(scriptLen, scriptPk, txo)
+	}
+
+	return ret
+}
+
+func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	dataLen := 0
 	genesisIdLen := 0
-	genesisOffset := scriptLen - 8 - 4
-	valueOffset := scriptLen - 8 - 4 - 8
-	addressOffset := scriptLen - 8 - 4 - 8 - 20
-	decimalOffset := scriptLen - 8 - 4 - 8 - 20 - 1
-	symbolOffset := scriptLen - 8 - 4 - 8 - 20 - 1 - 1 - 10
-	nameOffset := scriptLen - 8 - 4 - 8 - 20 - 1 - 1 - 10 - 20
-
-	if (bytes.HasSuffix(pkscript, []byte("sensible")) || bytes.HasSuffix(pkscript, []byte("oraclesv"))) &&
-		pkscript[scriptLen-8-4] == 1 { // PROTO_TYPE == 1
-
-		if pkscript[scriptLen-72-36-1-1] == 0x4c && pkscript[scriptLen-72-36-1] == 108 {
-			genesisIdLen = 36        // new ft
-			dataLen = 1 + 1 + 1 + 72 // opreturn + 0x4c + pushdata + data
-		} else if pkscript[scriptLen-72-20-1-1] == 0x4c && pkscript[scriptLen-72-20-1] == 92 {
-			genesisIdLen = 20        // old ft
-			dataLen = 1 + 1 + 1 + 72 // opreturn + 0x4c + pushdata + data
-		} else if pkscript[scriptLen-50-36-1-1] == 0x4c && pkscript[scriptLen-50-36-1] == 86 {
-			genesisIdLen = 36        // old ft
-			dataLen = 1 + 1 + 1 + 50 // opreturn + 0x4c + pushdata + data
-		} else if pkscript[scriptLen-92-20-1-1] == 0x4c && pkscript[scriptLen-92-20-1] == 112 {
-			genesisIdLen = 20        // old ft
-			dataLen = 1 + 1 + 1 + 92 // opreturn + 0x4c + pushdata + data
-		} else {
-			genesisIdLen = 40        // error ft
-			dataLen = 1 + 1 + 1 + 72 // opreturn + 0x4c + pushdata + data
-		}
-
-		genesisOffset -= genesisIdLen
-		valueOffset -= genesisIdLen
-		addressOffset -= genesisIdLen
-		decimalOffset -= genesisIdLen
-		symbolOffset -= genesisIdLen
-		nameOffset -= genesisIdLen
-
-		txo.Decimal = uint64(pkscript[decimalOffset])
-		txo.Symbol = string(bytes.TrimRight(pkscript[symbolOffset:symbolOffset+10], "\x00"))
-		txo.Name = string(bytes.TrimRight(pkscript[nameOffset:nameOffset+20], "\x00"))
-	} else if pkscript[scriptLen-1] < 2 && pkscript[scriptLen-37-1] == 37 && pkscript[scriptLen-37-1-40-1] == 40 && pkscript[scriptLen-37-1-40-1-1] == OP_RETURN {
-		// nft issue
-		txo.IsNFT = true
-		genesisIdLen = 40
-		genesisOffset = scriptLen - 37 - 1 - genesisIdLen
-		valueOffset = scriptLen - 1 - 8
-		addressOffset = scriptLen - 1 - 8 - 8 - 20
-
-		dataLen = 1 + 1 + 1 + 37 // opreturn + pushdata + pushdata + data
-	} else if pkscript[scriptLen-1] == 1 && pkscript[scriptLen-61-1] == 61 && pkscript[scriptLen-61-1-40-1] == 40 && pkscript[scriptLen-61-1-40-1-1] == OP_RETURN {
-		// nft transfer
-		txo.IsNFT = true
-		genesisIdLen = 40
-		genesisOffset = scriptLen - 61 - 1 - genesisIdLen
-		metaTxIdOffset := scriptLen - 1 - 32
-		valueOffset = scriptLen - 1 - 32 - 8
-		addressOffset = scriptLen - 1 - 32 - 8 - 20
-
-		dataLen = 1 + 1 + 1 + 61 // opreturn + pushdata + pushdata + data
-		txo.MetaTxId = make([]byte, 32)
-		copy(txo.MetaTxId, pkscript[metaTxIdOffset:metaTxIdOffset+32])
+	if scriptPk[scriptLen-72-36-1-1] == 0x4c && scriptPk[scriptLen-72-36-1] == 108 {
+		genesisIdLen = 36                       // new ft
+		dataLen = 1 + 1 + 1 + 72 + genesisIdLen // opreturn + 0x4c + pushdata + data
+	} else if scriptPk[scriptLen-72-20-1-1] == 0x4c && scriptPk[scriptLen-72-20-1] == 92 {
+		genesisIdLen = 20                       // old ft
+		dataLen = 1 + 1 + 1 + 72 + genesisIdLen // opreturn + 0x4c + pushdata + data
+	} else if scriptPk[scriptLen-50-36-1-1] == 0x4c && scriptPk[scriptLen-50-36-1] == 86 {
+		genesisIdLen = 36                       // old ft
+		dataLen = 1 + 1 + 1 + 50 + genesisIdLen // opreturn + 0x4c + pushdata + data
+	} else if scriptPk[scriptLen-92-20-1-1] == 0x4c && scriptPk[scriptLen-92-20-1] == 112 {
+		genesisIdLen = 20                       // old ft
+		dataLen = 1 + 1 + 1 + 92 + genesisIdLen // opreturn + 0x4c + pushdata + data
 	} else {
-		return txo
+		genesisIdLen = 40                       // error ft
+		dataLen = 1 + 1 + 1 + 72 + genesisIdLen // opreturn + 0x4c + pushdata + data
+		return false
 	}
 
-	txo.GenesisId = make([]byte, genesisIdLen)
+	protoTypeOffset := scriptLen - 8 - 4
+	genesisOffset := protoTypeOffset - genesisIdLen
+	amountOffset := genesisOffset - 8
+	addressOffset := amountOffset - 20
+	decimalOffset := addressOffset - 1
+	symbolOffset := decimalOffset - 1 - 10
+	nameOffset := symbolOffset - 20
+
+	txo.Decimal = uint64(scriptPk[decimalOffset])
+	txo.Symbol = string(bytes.TrimRight(scriptPk[symbolOffset:symbolOffset+10], "\x00"))
+	txo.Name = string(bytes.TrimRight(scriptPk[nameOffset:nameOffset+20], "\x00"))
+
+	txo.Amount = binary.LittleEndian.Uint64(scriptPk[amountOffset : amountOffset+8])
+
 	txo.AddressPkh = make([]byte, 20)
-	copy(txo.GenesisId, pkscript[genesisOffset:genesisOffset+genesisIdLen])
-	copy(txo.AddressPkh, pkscript[addressOffset:addressOffset+20])
+	copy(txo.AddressPkh, scriptPk[addressOffset:addressOffset+20])
 
-	txo.DataValue = binary.LittleEndian.Uint64(pkscript[valueOffset : valueOffset+8])
+	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
+	txo.GenesisId = make([]byte, genesisIdLen)
+	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
+	return true
+}
 
-	txo.CodeHash = GetHash160(pkscript[:scriptLen-genesisIdLen-dataLen])
+func decodeUnique(scriptLen int, scriptPk []byte, txo *TxoData) bool {
+	genesisIdLen := 36 // ft unique
+	protoTypeOffset := scriptLen - 8 - 4
+	genesisOffset := protoTypeOffset - genesisIdLen
+	customDataSizeOffset := genesisOffset - 1 - 4
 
-	return txo
+	customDataSize := binary.LittleEndian.Uint64(scriptPk[customDataSizeOffset : customDataSizeOffset+4])
+	varint := getVarIntLen(customDataSize)
+	dataLen := 1 + 1 + varint + int(customDataSize) + 17 + genesisIdLen // opreturn + 0x.. + pushdata + data
+
+	if dataLen >= scriptLen || scriptPk[scriptLen-dataLen] != OP_RETURN {
+		dataLen = 0
+		return false
+	}
+
+	txo.AddressPkh = make([]byte, 20)
+	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
+	txo.GenesisId = make([]byte, genesisIdLen)
+	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
+
+	return true
+}
+
+func decodeNFTIssue(scriptLen int, scriptPk []byte, txo *TxoData) bool {
+	// nft issue
+	txo.IsNFT = true
+	genesisIdLen := 40
+	genesisOffset := scriptLen - 37 - 1 - genesisIdLen
+	tokenIdxOffset := scriptLen - 1 - 8
+	addressOffset := tokenIdxOffset - 8 - 20
+
+	dataLen := 1 + 1 + genesisIdLen + 1 + 37 // opreturn + pushdata + pushdata + data
+	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
+	txo.GenesisId = make([]byte, genesisIdLen)
+	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
+
+	txo.TokenIdx = binary.LittleEndian.Uint64(scriptPk[tokenIdxOffset : tokenIdxOffset+8])
+
+	txo.AddressPkh = make([]byte, 20)
+	copy(txo.AddressPkh, scriptPk[addressOffset:addressOffset+20])
+
+	return true
+}
+
+func decodeNFTTransfer(scriptLen int, scriptPk []byte, txo *TxoData) bool {
+	// nft transfer
+	txo.IsNFT = true
+	genesisIdLen := 40
+	genesisOffset := scriptLen - 61 - 1 - genesisIdLen
+	metaTxIdOffset := scriptLen - 1 - 32
+	tokenIdxOffset := metaTxIdOffset - 8
+	addressOffset := tokenIdxOffset - 20
+
+	dataLen := 1 + 1 + genesisIdLen + 1 + 61 // opreturn + pushdata + pushdata + data
+	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
+	txo.GenesisId = make([]byte, genesisIdLen)
+	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
+
+	txo.MetaTxId = make([]byte, 32)
+	copy(txo.MetaTxId, scriptPk[metaTxIdOffset:metaTxIdOffset+32])
+
+	txo.TokenIdx = binary.LittleEndian.Uint64(scriptPk[tokenIdxOffset : tokenIdxOffset+8])
+
+	txo.AddressPkh = make([]byte, 20)
+	copy(txo.AddressPkh, scriptPk[addressOffset:addressOffset+20])
+
+	return true
 }
