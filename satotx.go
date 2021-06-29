@@ -80,21 +80,19 @@ func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 }
 
 func decodeUnique(scriptLen int, scriptPk []byte, txo *TxoData) bool {
-	txo.CodeType = CodeType_UNIQUE
 	genesisIdLen := 36 // ft unique
 	protoTypeOffset := scriptLen - 8 - 4
 	genesisOffset := protoTypeOffset - genesisIdLen
 	customDataSizeOffset := genesisOffset - 1 - 4
-
-	customDataSize := binary.LittleEndian.Uint64(scriptPk[customDataSizeOffset : customDataSizeOffset+4])
-	varint := getVarIntLen(customDataSize)
+	customDataSize := binary.LittleEndian.Uint32(scriptPk[customDataSizeOffset : customDataSizeOffset+4])
+	varint := getVarIntLen(int(customDataSize))
 	dataLen := 1 + 1 + varint + int(customDataSize) + 17 + genesisIdLen // opreturn + 0x.. + pushdata + data
 
 	if dataLen >= scriptLen || scriptPk[scriptLen-dataLen] != OP_RETURN {
 		dataLen = 0
 		return false
 	}
-
+	txo.CodeType = CodeType_UNIQUE
 	txo.AddressPkh = make([]byte, 20)
 	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
 	txo.GenesisId = make([]byte, genesisIdLen)
