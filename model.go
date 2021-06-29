@@ -7,6 +7,13 @@ const (
 	CodeType_NFT    uint32 = 3
 )
 
+var CodeTypeName []string = []string{
+	"NONE",
+	"FT",
+	"UNIQUE",
+	"NFT",
+}
+
 type TxoData struct {
 	CodeType   uint32
 	CodeHash   []byte
