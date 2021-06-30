@@ -18,6 +18,7 @@ type TxoData struct {
 	CodeType   uint32
 	CodeHash   []byte
 	GenesisId  []byte
+	SensibleId []byte
 	AddressPkh []byte
 
 	MetaTxId []byte // nft metatxid

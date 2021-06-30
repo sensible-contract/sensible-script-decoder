@@ -2,6 +2,8 @@ package script
 
 import (
 	"encoding/hex"
+	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -17,6 +19,7 @@ func TestDecode(t *testing.T) {
 			CodeType:   CodeType_NONE,
 			CodeHash:   empty,
 			GenesisId:  empty,
+			SensibleId: empty,
 			AddressPkh: empty,
 
 			MetaTxId: empty,
@@ -29,6 +32,7 @@ func TestDecode(t *testing.T) {
 		}
 
 		DecodeSensibleTxo(script, txo)
-		t.Logf("txo: %#v", txo)
+		data, _ := json.Marshal(txo)
+		t.Logf("txo: %s", strings.ReplaceAll(string(data), ",", "\n"))
 	}
 }

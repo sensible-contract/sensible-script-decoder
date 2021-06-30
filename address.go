@@ -5,6 +5,7 @@ func ExtractPkScriptForTxo(Pkscript, scriptType []byte) (txo *TxoData) {
 		CodeType:   CodeType_NONE,
 		CodeHash:   empty,
 		GenesisId:  empty,
+		SensibleId: empty,
 		AddressPkh: empty,
 
 		MetaTxId: empty,

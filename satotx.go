@@ -37,26 +37,49 @@ func DecodeSensibleTxo(scriptPk []byte, txo *TxoData) bool {
 func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	dataLen := 0
 	genesisIdLen := 0
-	if scriptPk[scriptLen-72-36-1-1] == 0x4c && scriptPk[scriptLen-72-36-1] == 108 {
-		genesisIdLen = 36                       // new ft
-		dataLen = 1 + 1 + 1 + 72 + genesisIdLen // opreturn + 0x4c + pushdata + data
+	sensibleIdLen := 0
+	useTokenIdHash := false
+	// v5
+	// <type specific data> + <proto header>
+	// <proto header> = <type(4 bytes)> + <'sensible'(8 bytes)>
+	// <token type specific data> = <token_name (20 bytes)> + <token_symbol (10 bytes)> + <is_genesis(1 byte)> + <decimailNum(1 byte)> + <address(20 bytes)> + <token amount(8 bytes)> + <genesisHash(20 bytes)> + <rabinPubKeyHashArrayHash(20 bytes)> + <genesisId(36 bytes)>
+
+	// v1 ~ v4
+	// <type specific data> + <proto header>
+	// <proto header> = <type(4 bytes)> + <'sensible'(8 bytes)>
+	// <token type specific data> = <token_name (20 bytes)> + <token_symbol (10 bytes)> + <is_genesis(1 byte)> + <decimailNum(1 byte)> + <address(20 bytes)> + <token amount(8 bytes)> + <genesisId(x bytes)>
+
+	if scriptPk[scriptLen-72-76-1-1] == 0x4c && scriptPk[scriptLen-72-76-1] == 148 {
+		// ft v5
+		genesisIdLen = 76
+		sensibleIdLen = 36
+		dataLen = 1 + 1 + 1 + 72 + genesisIdLen // opreturn + 0x4c + pushdata + data + genesisId
+		useTokenIdHash = true
+	} else if scriptPk[scriptLen-72-36-1-1] == 0x4c && scriptPk[scriptLen-72-36-1] == 108 {
+		// ft v4
+		genesisIdLen = 36
+		dataLen = 1 + 1 + 1 + 72 + genesisIdLen
 	} else if scriptPk[scriptLen-72-20-1-1] == 0x4c && scriptPk[scriptLen-72-20-1] == 92 {
-		genesisIdLen = 20                       // old ft
-		dataLen = 1 + 1 + 1 + 72 + genesisIdLen // opreturn + 0x4c + pushdata + data
+		// ft v3
+		genesisIdLen = 20
+		dataLen = 1 + 1 + 1 + 72 + genesisIdLen
 	} else if scriptPk[scriptLen-50-36-1-1] == 0x4c && scriptPk[scriptLen-50-36-1] == 86 {
-		genesisIdLen = 36                       // old ft
-		dataLen = 1 + 1 + 1 + 50 + genesisIdLen // opreturn + 0x4c + pushdata + data
+		// ft v2
+		genesisIdLen = 36
+		dataLen = 1 + 1 + 1 + 50 + genesisIdLen
 	} else if scriptPk[scriptLen-92-20-1-1] == 0x4c && scriptPk[scriptLen-92-20-1] == 112 {
-		genesisIdLen = 20                       // old ft
-		dataLen = 1 + 1 + 1 + 92 + genesisIdLen // opreturn + 0x4c + pushdata + data
+		// ft v1
+		genesisIdLen = 20
+		dataLen = 1 + 1 + 1 + 92 + genesisIdLen
 	} else {
-		genesisIdLen = 40                       // error ft
-		dataLen = 1 + 1 + 1 + 72 + genesisIdLen // opreturn + 0x4c + pushdata + data
+		// error ft
 		return false
 	}
 
 	protoTypeOffset := scriptLen - 8 - 4
+	sensibleOffset := protoTypeOffset - sensibleIdLen
 	genesisOffset := protoTypeOffset - genesisIdLen
+
 	amountOffset := genesisOffset - 8
 	addressOffset := amountOffset - 20
 	decimalOffset := addressOffset - 1
@@ -74,8 +97,18 @@ func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	copy(txo.AddressPkh, scriptPk[addressOffset:addressOffset+20])
 
 	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
-	txo.GenesisId = make([]byte, genesisIdLen)
-	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
+	if useTokenIdHash {
+		// GenesisId is tokenIdHash
+		txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
+
+		txo.SensibleId = make([]byte, sensibleIdLen)
+		copy(txo.GenesisId, scriptPk[sensibleOffset:sensibleOffset+sensibleIdLen])
+	} else {
+		txo.GenesisId = make([]byte, genesisIdLen)
+		copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
+
+		txo.SensibleId = txo.GenesisId
+	}
 	return true
 }
 
