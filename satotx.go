@@ -102,7 +102,7 @@ func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 		txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
 
 		txo.SensibleId = make([]byte, sensibleIdLen)
-		copy(txo.GenesisId, scriptPk[sensibleOffset:sensibleOffset+sensibleIdLen])
+		copy(txo.SensibleId, scriptPk[sensibleOffset:sensibleOffset+sensibleIdLen])
 	} else {
 		txo.GenesisId = make([]byte, genesisIdLen)
 		copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
