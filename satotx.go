@@ -113,9 +113,14 @@ func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 }
 
 func decodeUnique(scriptLen int, scriptPk []byte, txo *TxoData) bool {
-	genesisIdLen := 36 // ft unique
+	// <unique data> = <unique custom data> + <custom data length(4 bytes)> + <genesisFlag(1 bytes)> + <rabinPubKeyHashArrayHash(20 bytes)> + <sensibleID(36 bytes)> + <protoType(4 bytes)> + <protoFlag(8 bytes)>
+	genesisIdLen := 56 // ft unique
+	sensibleIdLen := 36
+
 	protoTypeOffset := scriptLen - 8 - 4
 	genesisOffset := protoTypeOffset - genesisIdLen
+	sensibleOffset := protoTypeOffset - sensibleIdLen
+
 	customDataSizeOffset := genesisOffset - 1 - 4
 	customDataSize := binary.LittleEndian.Uint32(scriptPk[customDataSizeOffset : customDataSizeOffset+4])
 	varint := getVarIntLen(int(customDataSize))
@@ -128,8 +133,12 @@ func decodeUnique(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	txo.CodeType = CodeType_UNIQUE
 	txo.AddressPkh = make([]byte, 20)
 	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
-	txo.GenesisId = make([]byte, genesisIdLen)
-	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
+
+	// GenesisId is tokenIdHash
+	txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
+
+	txo.SensibleId = make([]byte, sensibleIdLen)
+	copy(txo.SensibleId, scriptPk[sensibleOffset:sensibleOffset+sensibleIdLen])
 
 	return true
 }
