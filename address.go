@@ -2,19 +2,11 @@ package script
 
 func ExtractPkScriptForTxo(Pkscript, scriptType []byte) (txo *TxoData) {
 	txo = &TxoData{
-		CodeType:   CodeType_NONE,
 		CodeHash:   empty,
 		GenesisId:  empty,
 		SensibleId: empty,
 		AddressPkh: empty,
-
-		MetaTxId: empty,
-		TokenIdx: 0,
-
-		Name:    "",
-		Symbol:  "",
-		Amount:  0,
-		Decimal: 0,
+		MetaTxId:   empty,
 	}
 
 	if isPubkeyHash(scriptType) {

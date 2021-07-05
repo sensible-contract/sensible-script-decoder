@@ -21,8 +21,9 @@ type TxoData struct {
 	SensibleId []byte
 	AddressPkh []byte
 
-	MetaTxId []byte // nft metatxid
-	TokenIdx uint64 // nft tokenIdx
+	MetaTxId    []byte // nft metatxid
+	TokenIdx    uint64 // nft tokenIdx
+	TokenSupply uint64 // nft tokenIdx
 
 	Name    string // ft name
 	Symbol  string // ft symbol
