@@ -17,8 +17,8 @@ var CodeTypeName []string = []string{
 type TxoData struct {
 	CodeType   uint32
 	CodeHash   []byte
-	GenesisId  []byte
-	SensibleId []byte
+	GenesisId  []byte // for search: codehash + genesis
+	SensibleId []byte // GenesisTx outpoint
 	AddressPkh []byte
 
 	MetaTxId    []byte // nft metatxid

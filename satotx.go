@@ -169,10 +169,13 @@ func decodeNFTv2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
 
 	// GenesisId is tokenIdHash
-	txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
+	// txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
 
 	txo.SensibleId = make([]byte, sensibleIdLen)
 	copy(txo.SensibleId, scriptPk[sensibleOffset:sensibleOffset+sensibleIdLen])
+
+	// for search: codehash + genesis
+	txo.GenesisId = txo.SensibleId
 
 	txo.MetaTxId = make([]byte, 36)
 	copy(txo.MetaTxId, scriptPk[metaTxIdOffset:metaTxIdOffset+36])
