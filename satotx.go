@@ -154,11 +154,12 @@ func decodeNFTv2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	sensibleOffset := protoTypeOffset - sensibleIdLen
 
 	genesisOffset := protoTypeOffset - genesisIdLen
-	tokenIdxOffset := genesisOffset - 8
-	tokenSupplyOffset := tokenIdxOffset - 8
+	tokenIndexOffset := genesisOffset - 8
+	tokenSupplyOffset := tokenIndexOffset - 8
 	addressOffset := tokenSupplyOffset - 20
 	isGenesisOffset := addressOffset - 1
-	metaTxIdOffset := isGenesisOffset - 36
+	metaOutputIndexOffset := isGenesisOffset - 4
+	metaTxIdOffset := metaOutputIndexOffset - 32
 
 	dataLen := 1 + 1 + 1 + 36 + 1 + 20 + 8 + 8 + 20 + 20 + 36 + 4 + 8 // opreturn + 0x4c + pushdata + data
 	if dataLen >= scriptLen || scriptPk[scriptLen-dataLen] != OP_RETURN {
@@ -177,13 +178,14 @@ func decodeNFTv2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	// for search: codehash + genesis
 	txo.GenesisId = txo.SensibleId
 
-	txo.MetaTxId = make([]byte, 36)
-	copy(txo.MetaTxId, scriptPk[metaTxIdOffset:metaTxIdOffset+36])
+	txo.MetaOutputIndex = binary.LittleEndian.Uint32(scriptPk[metaOutputIndexOffset : metaOutputIndexOffset+4])
+	txo.MetaTxId = make([]byte, 32)
+	copy(txo.MetaTxId, scriptPk[metaTxIdOffset:metaTxIdOffset+32])
 
 	txo.TokenSupply = binary.LittleEndian.Uint64(scriptPk[tokenSupplyOffset : tokenSupplyOffset+8])
-	txo.TokenIdx = binary.LittleEndian.Uint64(scriptPk[tokenIdxOffset : tokenIdxOffset+8])
+	txo.TokenIndex = binary.LittleEndian.Uint64(scriptPk[tokenIndexOffset : tokenIndexOffset+8])
 	if scriptPk[isGenesisOffset] == 1 {
-		txo.TokenIdx = txo.TokenSupply
+		txo.TokenIndex = txo.TokenSupply
 	}
 
 	txo.AddressPkh = make([]byte, 20)
@@ -197,8 +199,8 @@ func decodeNFTIssue(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	genesisIdLen := 40
 	genesisOffset := scriptLen - 37 - 1 - genesisIdLen
 	tokenSupplyOffset := scriptLen - 1 - 8
-	tokenIdxOffset := tokenSupplyOffset - 8
-	addressOffset := tokenIdxOffset - 20
+	tokenIndexOffset := tokenSupplyOffset - 8
+	addressOffset := tokenIndexOffset - 20
 
 	dataLen := 1 + 1 + genesisIdLen + 1 + 37 // opreturn + pushdata + pushdata + data
 	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
@@ -206,9 +208,9 @@ func decodeNFTIssue(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
 
 	txo.TokenSupply = binary.LittleEndian.Uint64(scriptPk[tokenSupplyOffset : tokenSupplyOffset+8])
-	txo.TokenIdx = binary.LittleEndian.Uint64(scriptPk[tokenIdxOffset : tokenIdxOffset+8])
+	txo.TokenIndex = binary.LittleEndian.Uint64(scriptPk[tokenIndexOffset : tokenIndexOffset+8])
 
-	txo.TokenIdx = txo.TokenSupply
+	txo.TokenIndex = txo.TokenSupply
 
 	txo.AddressPkh = make([]byte, 20)
 	copy(txo.AddressPkh, scriptPk[addressOffset:addressOffset+20])
@@ -221,8 +223,8 @@ func decodeNFTTransfer(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	genesisIdLen := 40
 	genesisOffset := scriptLen - 61 - 1 - genesisIdLen
 	metaTxIdOffset := scriptLen - 1 - 32
-	tokenIdxOffset := metaTxIdOffset - 8
-	addressOffset := tokenIdxOffset - 20
+	tokenIndexOffset := metaTxIdOffset - 8
+	addressOffset := tokenIndexOffset - 20
 
 	dataLen := 1 + 1 + genesisIdLen + 1 + 61 // opreturn + pushdata + pushdata + data
 	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
@@ -232,7 +234,7 @@ func decodeNFTTransfer(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	txo.MetaTxId = make([]byte, 32)
 	copy(txo.MetaTxId, scriptPk[metaTxIdOffset:metaTxIdOffset+32])
 
-	txo.TokenIdx = binary.LittleEndian.Uint64(scriptPk[tokenIdxOffset : tokenIdxOffset+8])
+	txo.TokenIndex = binary.LittleEndian.Uint64(scriptPk[tokenIndexOffset : tokenIndexOffset+8])
 
 	txo.AddressPkh = make([]byte, 20)
 	copy(txo.AddressPkh, scriptPk[addressOffset:addressOffset+20])
