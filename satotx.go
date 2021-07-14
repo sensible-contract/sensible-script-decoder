@@ -179,8 +179,7 @@ func decodeNFTv2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	txo.GenesisId = txo.SensibleId
 
 	txo.MetaOutputIndex = binary.LittleEndian.Uint32(scriptPk[metaOutputIndexOffset : metaOutputIndexOffset+4])
-	txo.MetaTxId = make([]byte, 32)
-	copy(txo.MetaTxId, scriptPk[metaTxIdOffset:metaTxIdOffset+32])
+	txo.MetaTxId = ReverseBytes(scriptPk[metaTxIdOffset : metaTxIdOffset+32])
 
 	txo.TokenSupply = binary.LittleEndian.Uint64(scriptPk[tokenSupplyOffset : tokenSupplyOffset+8])
 	txo.TokenIndex = binary.LittleEndian.Uint64(scriptPk[tokenIndexOffset : tokenIndexOffset+8])
