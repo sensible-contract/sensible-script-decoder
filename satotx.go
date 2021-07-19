@@ -23,13 +23,22 @@ func DecodeSensibleTxo(scriptPk []byte, txo *TxoData) bool {
 		if scriptPk[protoTypeOffset] == 1 { // PROTO_TYPE == 1
 			ret = decodeFT(scriptLen, scriptPk, txo)
 		} else if scriptPk[protoTypeOffset] == 2 { // PROTO_TYPE == 2
-			ret = decodeUnique(scriptLen, scriptPk, txo)
+			ret = decodeUniqueV2(scriptLen, scriptPk, txo)
+			if !ret {
+				ret = decodeUnique(scriptLen, scriptPk, txo)
+			}
 		} else if scriptPk[protoTypeOffset] == 3 { // PROTO_TYPE == 3
-			ret = decodeNFTv2(scriptLen, scriptPk, txo)
+			ret = decodeNFT(scriptLen, scriptPk, txo)
 		}
-	} else if scriptPk[scriptLen-1] < 2 && scriptPk[scriptLen-37-1] == 37 && scriptPk[scriptLen-37-1-40-1] == 40 && scriptPk[scriptLen-37-1-40-1-1] == OP_RETURN {
+	} else if scriptPk[scriptLen-1] < 2 &&
+		scriptPk[scriptLen-37-1] == 37 &&
+		scriptPk[scriptLen-37-1-40-1] == 40 &&
+		scriptPk[scriptLen-37-1-40-1-1] == OP_RETURN {
 		ret = decodeNFTIssue(scriptLen, scriptPk, txo)
-	} else if scriptPk[scriptLen-1] == 1 && scriptPk[scriptLen-61-1] == 61 && scriptPk[scriptLen-61-1-40-1] == 40 && scriptPk[scriptLen-61-1-40-1-1] == OP_RETURN {
+	} else if scriptPk[scriptLen-1] == 1 &&
+		scriptPk[scriptLen-61-1] == 61 &&
+		scriptPk[scriptLen-61-1-40-1] == 40 &&
+		scriptPk[scriptLen-61-1-40-1-1] == OP_RETURN {
 		ret = decodeNFTTransfer(scriptLen, scriptPk, txo)
 	}
 
@@ -38,38 +47,60 @@ func DecodeSensibleTxo(scriptPk []byte, txo *TxoData) bool {
 
 func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	dataLen := 0
+	protoVersionLen := 0
 	genesisIdLen := 0
 	sensibleIdLen := 0
 	useTokenIdHash := false
-	// v5
-	// <type specific data> + <proto header>
-	// <proto header> = <type(4 bytes)> + <'sensible'(8 bytes)>
-	// <token type specific data> = <token_name (20 bytes)> + <token_symbol (10 bytes)> + <is_genesis(1 byte)> + <decimailNum(1 byte)> + <address(20 bytes)> + <token amount(8 bytes)> + <genesisHash(20 bytes)> + <rabinPubKeyHashArrayHash(20 bytes)> + <genesisId(36 bytes)>
 
-	// v1 ~ v4
-	// <type specific data> + <proto header>
-	// <proto header> = <type(4 bytes)> + <'sensible'(8 bytes)>
-	// <token type specific data> = <token_name (20 bytes)> + <token_symbol (10 bytes)> + <is_genesis(1 byte)> + <decimailNum(1 byte)> + <address(20 bytes)> + <token amount(8 bytes)> + <genesisId(x bytes)>
+	if scriptPk[scriptLen-76-76-1-1-1] == OP_RETURN &&
+		scriptPk[scriptLen-76-76-1-1] == 0x4c &&
+		scriptPk[scriptLen-76-76-1] == 152 {
+		// v6
+		// <type specific data> + <proto header>
+		// <proto header> = <version(4 bytes)> + <type(4 bytes)> + <'sensible'(8 bytes)>
+		// <token type specific data> = <token_name (20 bytes)> + <token_symbol (10 bytes)> + <is_genesis(1 byte)> + <decimailNum(1 byte)> + <address(20 bytes)> + <token amount(8 bytes)> + <genesisHash(20 bytes)> + <rabinPubKeyHashArrayHash(20 bytes)> + <genesisId(36 bytes)>
+		protoVersionLen = 4
+		genesisIdLen = 76
+		sensibleIdLen = 36
+		dataLen = 1 + 1 + 76 + genesisIdLen // 0x4c + pushdata + data + genesisId
+		useTokenIdHash = true
 
-	if scriptPk[scriptLen-72-76-1-1] == 0x4c && scriptPk[scriptLen-72-76-1] == 148 {
-		// ft v5
+	} else if scriptPk[scriptLen-72-76-1-1-1] == OP_RETURN &&
+		scriptPk[scriptLen-72-76-1-1] == 0x4c &&
+		scriptPk[scriptLen-72-76-1] == 148 {
+		// v5
+		// <type specific data> + <proto header>
+		// <proto header> = <type(4 bytes)> + <'sensible'(8 bytes)>
+		// <token type specific data> = <token_name (20 bytes)> + <token_symbol (10 bytes)> + <is_genesis(1 byte)> + <decimailNum(1 byte)> + <address(20 bytes)> + <token amount(8 bytes)> + <genesisHash(20 bytes)> + <rabinPubKeyHashArrayHash(20 bytes)> + <genesisId(36 bytes)>
 		genesisIdLen = 76
 		sensibleIdLen = 36
 		dataLen = 1 + 1 + 1 + 72 + genesisIdLen // opreturn + 0x4c + pushdata + data + genesisId
 		useTokenIdHash = true
-	} else if scriptPk[scriptLen-72-36-1-1] == 0x4c && scriptPk[scriptLen-72-36-1] == 108 {
-		// ft v4
+	} else if scriptPk[scriptLen-72-36-1-1-1] == OP_RETURN &&
+		scriptPk[scriptLen-72-36-1-1] == 0x4c &&
+		scriptPk[scriptLen-72-36-1] == 108 {
+		// v4
+		// v1 ~ v4
+		// <type specific data> + <proto header>
+		// <proto header> = <type(4 bytes)> + <'sensible'(8 bytes)>
+		// <token type specific data> = <token_name (20 bytes)> + <token_symbol (10 bytes)> + <is_genesis(1 byte)> + <decimailNum(1 byte)> + <address(20 bytes)> + <token amount(8 bytes)> + <genesisId(x bytes)>
 		genesisIdLen = 36
 		dataLen = 1 + 1 + 1 + 72 + genesisIdLen
-	} else if scriptPk[scriptLen-72-20-1-1] == 0x4c && scriptPk[scriptLen-72-20-1] == 92 {
+	} else if scriptPk[scriptLen-72-20-1-1-1] == OP_RETURN &&
+		scriptPk[scriptLen-72-20-1-1] == 0x4c &&
+		scriptPk[scriptLen-72-20-1] == 92 {
 		// ft v3
 		genesisIdLen = 20
 		dataLen = 1 + 1 + 1 + 72 + genesisIdLen
-	} else if scriptPk[scriptLen-50-36-1-1] == 0x4c && scriptPk[scriptLen-50-36-1] == 86 {
+	} else if scriptPk[scriptLen-50-36-1-1-1] == OP_RETURN &&
+		scriptPk[scriptLen-50-36-1-1] == 0x4c &&
+		scriptPk[scriptLen-50-36-1] == 86 {
 		// ft v2
 		genesisIdLen = 36
 		dataLen = 1 + 1 + 1 + 50 + genesisIdLen
-	} else if scriptPk[scriptLen-92-20-1-1] == 0x4c && scriptPk[scriptLen-92-20-1] == 112 {
+	} else if scriptPk[scriptLen-92-20-1-1-1] == OP_RETURN &&
+		scriptPk[scriptLen-92-20-1-1] == 0x4c &&
+		scriptPk[scriptLen-92-20-1] == 112 {
 		// ft v1
 		genesisIdLen = 20
 		dataLen = 1 + 1 + 1 + 92 + genesisIdLen
@@ -79,9 +110,9 @@ func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	}
 
 	protoTypeOffset := scriptLen - 8 - 4
-	sensibleOffset := protoTypeOffset - sensibleIdLen
+	sensibleOffset := protoTypeOffset - protoVersionLen - sensibleIdLen
 
-	genesisOffset := protoTypeOffset - genesisIdLen
+	genesisOffset := protoTypeOffset - protoVersionLen - genesisIdLen
 	amountOffset := genesisOffset - 8
 	addressOffset := amountOffset - 20
 	decimalOffset := addressOffset - 1
@@ -100,11 +131,11 @@ func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 
 	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
 	if useTokenIdHash {
-		// GenesisId is tokenIdHash
-		txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
-
 		txo.SensibleId = make([]byte, sensibleIdLen)
 		copy(txo.SensibleId, scriptPk[sensibleOffset:sensibleOffset+sensibleIdLen])
+
+		// GenesisId is tokenIdHash
+		txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
 	} else {
 		txo.GenesisId = make([]byte, genesisIdLen)
 		copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
@@ -144,16 +175,68 @@ func decodeUnique(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	return true
 }
 
-// nft v2
-func decodeNFTv2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
-	// <nft data> = <metaid_outpoint(36 bytes)> + <is_genesis(1 byte)> + <address(20 bytes)> + <totalSupply(8 bytes) + <tokenIndex(8 bytes)> + <genesisHash<20 bytes>) + <RABIN_PUBKEY_HASH_ARRAY_HASH(20 bytes)> + <sensibleID(36 bytes)> + <protoType(4 bytes)> + <protoFlag(8 bytes)>
-	genesisIdLen := 76 // nft v2
+func decodeUniqueV2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
+	// <unique data> = <unique custom data> + <custom data length(4 bytes)> + <genesisFlag(1 bytes)> + <rabinPubKeyHashArrayHash(20 bytes)> + <sensibleID(36 bytes)> + <protoVersion(4 bytes)> + <protoType(4 bytes)> + <protoFlag(8 bytes)>
+	protoVersionLen := 4
+	genesisIdLen := 56 // ft unique
 	sensibleIdLen := 36
 
 	protoTypeOffset := scriptLen - 8 - 4
-	sensibleOffset := protoTypeOffset - sensibleIdLen
+	sensibleOffset := protoTypeOffset - protoVersionLen - sensibleIdLen
 
-	genesisOffset := protoTypeOffset - genesisIdLen
+	genesisOffset := protoTypeOffset - protoVersionLen - genesisIdLen
+	customDataSizeOffset := genesisOffset - 1 - 4
+	customDataSize := binary.LittleEndian.Uint32(scriptPk[customDataSizeOffset : customDataSizeOffset+4])
+	varint := getVarIntLen(int(customDataSize))
+	dataLen := 1 + varint + int(customDataSize) + 17 + genesisIdLen // 0x.. + pushdata + data
+
+	if dataLen+1 >= scriptLen || scriptPk[scriptLen-dataLen-1] != OP_RETURN {
+		dataLen = 0
+		return false
+	}
+	txo.CodeType = CodeType_UNIQUE
+	txo.AddressPkh = make([]byte, 20)
+	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
+
+	// GenesisId is tokenIdHash
+	txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
+
+	txo.SensibleId = make([]byte, sensibleIdLen)
+	copy(txo.SensibleId, scriptPk[sensibleOffset:sensibleOffset+sensibleIdLen])
+	return true
+}
+
+// nft
+func decodeNFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
+	dataLen := 0
+	protoVersionLen := 0
+	genesisIdLen := 76 // nft v2
+	sensibleIdLen := 36
+	useTokenIdHash := false
+	if scriptPk[scriptLen-89-76-1-1-1] == OP_RETURN &&
+		scriptPk[scriptLen-89-76-1-1] == 0x4c &&
+		scriptPk[scriptLen-89-76-1] == 165 {
+		// nft v3
+		// <nft data> = <metaid_outpoint(36 bytes)> + <is_genesis(1 byte)> + <address(20 bytes)> + <totalSupply(8 bytes) + <tokenIndex(8 bytes)> + <genesisHash<20 bytes>) + <RABIN_PUBKEY_HASH_ARRAY_HASH(20 bytes)> + <sensibleID(36 bytes)> + <protoVersion(4 bytes)> + <protoType(4 bytes)> + <protoFlag(8 bytes)>
+		dataLen = 1 + 1 + 36 + 1 + 20 + 8 + 8 + 20 + 20 + 36 + 4 + 4 + 8 // 0x4c + pushdata + data
+		protoVersionLen = 4
+		useTokenIdHash = true
+	} else if scriptPk[scriptLen-85-76-1-1-1] == OP_RETURN &&
+		scriptPk[scriptLen-85-76-1-1] == 0x4c &&
+		scriptPk[scriptLen-85-76-1] == 161 {
+		// nft v2
+		// <nft data> = <metaid_outpoint(36 bytes)> + <is_genesis(1 byte)> + <address(20 bytes)> + <totalSupply(8 bytes) + <tokenIndex(8 bytes)> + <genesisHash<20 bytes>) + <RABIN_PUBKEY_HASH_ARRAY_HASH(20 bytes)> + <sensibleID(36 bytes)> + <protoType(4 bytes)> + <protoFlag(8 bytes)>
+		dataLen = 1 + 1 + 1 + 36 + 1 + 20 + 8 + 8 + 20 + 20 + 36 + 4 + 8 // opreturn + 0x4c + pushdata + data
+		protoVersionLen = 0
+		useTokenIdHash = false
+	} else {
+		return false
+	}
+
+	protoTypeOffset := scriptLen - 8 - 4
+	sensibleOffset := protoTypeOffset - protoVersionLen - sensibleIdLen
+
+	genesisOffset := protoTypeOffset - protoVersionLen - genesisIdLen
 	tokenIndexOffset := genesisOffset - 8
 	tokenSupplyOffset := tokenIndexOffset - 8
 	addressOffset := tokenSupplyOffset - 20
@@ -161,22 +244,19 @@ func decodeNFTv2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	metaOutputIndexOffset := isGenesisOffset - 4
 	metaTxIdOffset := metaOutputIndexOffset - 32
 
-	dataLen := 1 + 1 + 1 + 36 + 1 + 20 + 8 + 8 + 20 + 20 + 36 + 4 + 8 // opreturn + 0x4c + pushdata + data
-	if dataLen >= scriptLen || scriptPk[scriptLen-dataLen] != OP_RETURN {
-		dataLen = 0
-		return false
-	}
 	txo.CodeType = CodeType_NFT
 	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
-
-	// GenesisId is tokenIdHash
-	// txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
 
 	txo.SensibleId = make([]byte, sensibleIdLen)
 	copy(txo.SensibleId, scriptPk[sensibleOffset:sensibleOffset+sensibleIdLen])
 
-	// for search: codehash + genesis
-	txo.GenesisId = txo.SensibleId
+	if useTokenIdHash {
+		// GenesisId is tokenIdHash
+		txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
+	} else {
+		// for search: codehash + genesis
+		txo.GenesisId = txo.SensibleId
+	}
 
 	txo.MetaOutputIndex = binary.LittleEndian.Uint32(scriptPk[metaOutputIndexOffset : metaOutputIndexOffset+4])
 	txo.MetaTxId = ReverseBytes(scriptPk[metaTxIdOffset : metaTxIdOffset+32])
