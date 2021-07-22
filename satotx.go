@@ -156,7 +156,7 @@ func decodeUnique(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	genesisOffset := protoTypeOffset - genesisIdLen
 	customDataSizeOffset := genesisOffset - 1 - 4
 	customDataSize := binary.LittleEndian.Uint32(scriptPk[customDataSizeOffset : customDataSizeOffset+4])
-	varint := getVarIntLen(int(customDataSize))
+	varint := getVarIntLen(int(customDataSize) + 17 + genesisIdLen)
 	dataLen := 1 + 1 + varint + int(customDataSize) + 17 + genesisIdLen // opreturn + 0x.. + pushdata + data
 
 	if dataLen >= scriptLen || scriptPk[scriptLen-dataLen] != OP_RETURN {
@@ -187,8 +187,8 @@ func decodeUniqueV2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	genesisOffset := protoTypeOffset - protoVersionLen - genesisIdLen
 	customDataSizeOffset := genesisOffset - 1 - 4
 	customDataSize := binary.LittleEndian.Uint32(scriptPk[customDataSizeOffset : customDataSizeOffset+4])
-	varint := getVarIntLen(int(customDataSize))
-	dataLen := 1 + varint + int(customDataSize) + 17 + genesisIdLen // 0x.. + pushdata + data
+	varint := getVarIntLen(int(customDataSize) + 21 + genesisIdLen)
+	dataLen := 1 + varint + int(customDataSize) + 21 + genesisIdLen // 0x.. + pushdata + data
 
 	if dataLen+1 >= scriptLen || scriptPk[scriptLen-dataLen-1] != OP_RETURN {
 		dataLen = 0
