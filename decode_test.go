@@ -23,7 +23,7 @@ type TxoDataTest struct {
 	Name    string // ft name
 	Symbol  string // ft symbol
 	Amount  uint64 // ft amount
-	Decimal uint64 // ft decimal
+	Decimal uint8  // ft decimal
 }
 
 var scripts []string

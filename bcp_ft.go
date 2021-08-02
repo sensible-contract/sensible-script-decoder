@@ -80,7 +80,7 @@ func decodeFT(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	nameOffset := symbolOffset - 20
 
 	txo.CodeType = CodeType_FT
-	txo.Decimal = uint64(scriptPk[decimalOffset])
+	txo.Decimal = uint8(scriptPk[decimalOffset])
 	txo.Symbol = string(bytes.TrimRight(scriptPk[symbolOffset:symbolOffset+10], "\x00"))
 	txo.Name = string(bytes.TrimRight(scriptPk[nameOffset:nameOffset+20], "\x00"))
 
