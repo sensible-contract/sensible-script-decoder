@@ -2,6 +2,7 @@ package script
 
 import (
 	"bytes"
+	"encoding/binary"
 )
 
 func hasSensibleFlag(scriptPk []byte) bool {
@@ -17,21 +18,36 @@ func DecodeSensibleTxo(scriptPk []byte, txo *TxoData) bool {
 	ret := false
 	if hasSensibleFlag(scriptPk) {
 		protoTypeOffset := scriptLen - 8 - 4
-		if scriptPk[protoTypeOffset] == 1 { // PROTO_TYPE == 1
+		protoType := binary.LittleEndian.Uint32(scriptPk[protoTypeOffset : protoTypeOffset+4])
+
+		switch protoType {
+		case CodeType_FT:
 			ret = decodeFT(scriptLen, scriptPk, txo)
-		} else if scriptPk[protoTypeOffset] == 2 { // PROTO_TYPE == 2
+
+		case CodeType_UNIQUE:
 			ret = decodeUniqueV2(scriptLen, scriptPk, txo)
 			if !ret {
 				ret = decodeUnique(scriptLen, scriptPk, txo)
 			}
-		} else if scriptPk[protoTypeOffset] == 3 { // PROTO_TYPE == 3
+
+		case CodeType_NFT:
 			ret = decodeNFT(scriptLen, scriptPk, txo)
+
+		case CodeType_NFT_SELL:
+			ret = decodeNFTSell(scriptLen, scriptPk, txo)
+
+		default:
+			ret = false
 		}
-	} else if scriptPk[scriptLen-1] < 2 &&
+		return ret
+	}
+
+	if scriptPk[scriptLen-1] < 2 &&
 		scriptPk[scriptLen-37-1] == 37 &&
 		scriptPk[scriptLen-37-1-40-1] == 40 &&
 		scriptPk[scriptLen-37-1-40-1-1] == OP_RETURN {
 		ret = decodeNFTIssue(scriptLen, scriptPk, txo)
+
 	} else if scriptPk[scriptLen-1] == 1 &&
 		scriptPk[scriptLen-61-1] == 61 &&
 		scriptPk[scriptLen-61-1-40-1] == 40 &&

@@ -5,6 +5,8 @@ const (
 	CodeType_FT     uint32 = 1
 	CodeType_UNIQUE uint32 = 2
 	CodeType_NFT    uint32 = 3
+
+	CodeType_NFT_SELL uint32 = 65536 + 1
 )
 
 var empty = make([]byte, 1)
