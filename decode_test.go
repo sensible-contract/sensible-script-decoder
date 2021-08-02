@@ -8,6 +8,24 @@ import (
 	"testing"
 )
 
+type TxoDataTest struct {
+	CodeType      uint32
+	CodeHashHex   string
+	GenesisIdHex  string // for search: codehash + genesis
+	SensibleIdHex string // GenesisTx outpoint
+	AddressPkhHex string
+
+	MetaTxIdHex     string // nft metatxid
+	MetaOutputIndex uint32
+	TokenIndex      uint64 // nft tokenIndex
+	TokenSupply     uint64 // nft tokenSupply
+
+	Name    string // ft name
+	Symbol  string // ft symbol
+	Amount  uint64 // ft amount
+	Decimal uint64 // ft decimal
+}
+
 var scripts []string
 
 func init() {
@@ -32,7 +50,24 @@ func TestDecode(t *testing.T) {
 		txo := &TxoData{}
 
 		DecodeSensibleTxo(script, txo)
-		data, _ := json.Marshal(txo)
+
+		data, _ := json.Marshal(TxoDataTest{
+			CodeType:      txo.CodeType,
+			CodeHashHex:   hex.EncodeToString(txo.CodeHash),
+			GenesisIdHex:  hex.EncodeToString(txo.GenesisId),
+			SensibleIdHex: hex.EncodeToString(txo.SensibleId),
+			AddressPkhHex: hex.EncodeToString(txo.AddressPkh),
+
+			MetaTxIdHex:     hex.EncodeToString(txo.MetaTxId),
+			MetaOutputIndex: txo.MetaOutputIndex,
+			TokenIndex:      txo.TokenIndex,
+			TokenSupply:     txo.TokenSupply,
+
+			Name:    txo.Name,
+			Symbol:  txo.Symbol,
+			Amount:  txo.Amount,
+			Decimal: txo.Decimal,
+		})
 		t.Logf("scriptLen: %d, txo: %s", len(script), strings.ReplaceAll(string(data), ",", "\n"))
 	}
 }
