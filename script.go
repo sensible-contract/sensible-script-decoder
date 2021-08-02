@@ -90,3 +90,21 @@ func IsOpreturn(scriptType []byte) bool {
 	}
 	return false
 }
+
+func IsLockingScriptOnlyEqual(pkScript []byte) bool {
+	// test locking script
+	// "0b 3c4b616e7965323032303e 87"
+
+	length := len(pkScript)
+	if length == 0 {
+		return true
+	}
+	if pkScript[length-1] != 0x87 {
+		return false
+	}
+	cnt, cntsize := SafeDecodeVarIntForScript(pkScript)
+	if length == int(cnt+cntsize+1) {
+		return true
+	}
+	return false
+}

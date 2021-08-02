@@ -7,6 +7,8 @@ const (
 	CodeType_NFT    uint32 = 3
 )
 
+var empty = make([]byte, 1)
+
 var CodeTypeName []string = []string{
 	"NONE",
 	"FT",
