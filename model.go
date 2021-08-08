@@ -6,6 +6,7 @@ const (
 	CodeType_UNIQUE uint32 = 2
 	CodeType_NFT    uint32 = 3
 
+	CodeType_SENSIBLE uint32 = 65536
 	CodeType_NFT_SELL uint32 = 65536 + 1
 )
 

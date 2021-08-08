@@ -90,6 +90,14 @@ func ExtractPkScriptForTxo(pkScript, scriptType []byte) (txo *TxoData) {
 	// if isMultiSig(scriptType) {
 	// 	return pkScript[:]
 	// }
+
+	if IsOpreturn(scriptType) {
+		if hasSensibleFlag(pkScript) {
+			txo.CodeType = CodeType_SENSIBLE
+		}
+		return txo
+	}
+
 	DecodeSensibleTxo(pkScript, txo)
 
 	return txo
