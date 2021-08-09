@@ -5,9 +5,10 @@ Locking script decoder for Sensible Contract
 解码锁定脚本，获得Sensible相关的字段数据。目前支持识别4种脚本类型（`CodeType`）：
 
 0. `NONE` 普通脚本
-1. `FT` sensible fungible token合约脚本
+1. `FT` sensible FT合约脚本
 2. `UNIQUE` sensible unique合约脚本
-3. `NFT` sensible non fungible token合约脚本
+3. `NFT` sensible NFT合约脚本
+
 
 # 使用方法
 

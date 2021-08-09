@@ -5,36 +5,36 @@ import (
 	"encoding/binary"
 )
 
-func hasSensibleFlag(scriptPk []byte) bool {
-	return bytes.HasSuffix(scriptPk, []byte("sensible")) || bytes.HasSuffix(scriptPk, []byte("oraclesv"))
+func hasSensibleFlag(pkScript []byte) bool {
+	return bytes.HasSuffix(pkScript, []byte("sensible")) || bytes.HasSuffix(pkScript, []byte("oraclesv"))
 }
 
-func DecodeSensibleTxo(scriptPk []byte, txo *TxoData) bool {
-	scriptLen := len(scriptPk)
+func DecodeSensibleTxo(pkScript []byte, txo *TxoData) bool {
+	scriptLen := len(pkScript)
 	if scriptLen < 1024 {
 		return false
 	}
 
 	ret := false
-	if hasSensibleFlag(scriptPk) {
+	if hasSensibleFlag(pkScript) {
 		protoTypeOffset := scriptLen - 8 - 4
-		protoType := binary.LittleEndian.Uint32(scriptPk[protoTypeOffset : protoTypeOffset+4])
+		protoType := binary.LittleEndian.Uint32(pkScript[protoTypeOffset : protoTypeOffset+4])
 
 		switch protoType {
 		case CodeType_FT:
-			ret = decodeFT(scriptLen, scriptPk, txo)
+			ret = decodeFT(scriptLen, pkScript, txo)
 
 		case CodeType_UNIQUE:
-			ret = decodeUniqueV2(scriptLen, scriptPk, txo)
+			ret = decodeUniqueV2(scriptLen, pkScript, txo)
 			if !ret {
-				ret = decodeUnique(scriptLen, scriptPk, txo)
+				ret = decodeUnique(scriptLen, pkScript, txo)
 			}
 
 		case CodeType_NFT:
-			ret = decodeNFT(scriptLen, scriptPk, txo)
+			ret = decodeNFT(scriptLen, pkScript, txo)
 
 		case CodeType_NFT_SELL:
-			ret = decodeNFTSell(scriptLen, scriptPk, txo)
+			ret = decodeNFTSell(scriptLen, pkScript, txo)
 
 		default:
 			ret = false
@@ -42,17 +42,17 @@ func DecodeSensibleTxo(scriptPk []byte, txo *TxoData) bool {
 		return ret
 	}
 
-	if scriptPk[scriptLen-1] < 2 &&
-		scriptPk[scriptLen-37-1] == 37 &&
-		scriptPk[scriptLen-37-1-40-1] == 40 &&
-		scriptPk[scriptLen-37-1-40-1-1] == OP_RETURN {
-		ret = decodeNFTIssue(scriptLen, scriptPk, txo)
+	if pkScript[scriptLen-1] < 2 &&
+		pkScript[scriptLen-37-1] == 37 &&
+		pkScript[scriptLen-37-1-40-1] == 40 &&
+		pkScript[scriptLen-37-1-40-1-1] == OP_RETURN {
+		ret = decodeNFTIssue(scriptLen, pkScript, txo)
 
-	} else if scriptPk[scriptLen-1] == 1 &&
-		scriptPk[scriptLen-61-1] == 61 &&
-		scriptPk[scriptLen-61-1-40-1] == 40 &&
-		scriptPk[scriptLen-61-1-40-1-1] == OP_RETURN {
-		ret = decodeNFTTransfer(scriptLen, scriptPk, txo)
+	} else if pkScript[scriptLen-1] == 1 &&
+		pkScript[scriptLen-61-1] == 61 &&
+		pkScript[scriptLen-61-1-40-1] == 40 &&
+		pkScript[scriptLen-61-1-40-1-1] == OP_RETURN {
+		ret = decodeNFTTransfer(scriptLen, pkScript, txo)
 	}
 
 	return ret

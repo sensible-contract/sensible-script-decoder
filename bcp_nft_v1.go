@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 )
 
-func decodeNFTIssue(scriptLen int, scriptPk []byte, txo *TxoData) bool {
+func decodeNFTIssue(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	// nft issue
 	txo.CodeType = CodeType_NFT
 	genesisIdLen := 40
@@ -14,21 +14,21 @@ func decodeNFTIssue(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	addressOffset := tokenIndexOffset - 20
 
 	dataLen := 1 + 1 + genesisIdLen + 1 + 37 // opreturn + pushdata + pushdata + data
-	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
+	txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
 	txo.GenesisId = make([]byte, genesisIdLen)
-	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
+	copy(txo.GenesisId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
 
-	txo.TokenSupply = binary.LittleEndian.Uint64(scriptPk[tokenSupplyOffset : tokenSupplyOffset+8])
-	txo.TokenIndex = binary.LittleEndian.Uint64(scriptPk[tokenIndexOffset : tokenIndexOffset+8])
+	txo.TokenSupply = binary.LittleEndian.Uint64(pkScript[tokenSupplyOffset : tokenSupplyOffset+8])
+	txo.TokenIndex = binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8])
 
 	txo.TokenIndex = txo.TokenSupply
 
 	txo.AddressPkh = make([]byte, 20)
-	copy(txo.AddressPkh, scriptPk[addressOffset:addressOffset+20])
+	copy(txo.AddressPkh, pkScript[addressOffset:addressOffset+20])
 	return true
 }
 
-func decodeNFTTransfer(scriptLen int, scriptPk []byte, txo *TxoData) bool {
+func decodeNFTTransfer(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	// nft transfer
 	txo.CodeType = CodeType_NFT
 	genesisIdLen := 40
@@ -38,16 +38,16 @@ func decodeNFTTransfer(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 	addressOffset := tokenIndexOffset - 20
 
 	dataLen := 1 + 1 + genesisIdLen + 1 + 61 // opreturn + pushdata + pushdata + data
-	txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
+	txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
 	txo.GenesisId = make([]byte, genesisIdLen)
-	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+genesisIdLen])
+	copy(txo.GenesisId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
 
 	txo.MetaTxId = make([]byte, 32)
-	copy(txo.MetaTxId, scriptPk[metaTxIdOffset:metaTxIdOffset+32])
+	copy(txo.MetaTxId, pkScript[metaTxIdOffset:metaTxIdOffset+32])
 
-	txo.TokenIndex = binary.LittleEndian.Uint64(scriptPk[tokenIndexOffset : tokenIndexOffset+8])
+	txo.TokenIndex = binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8])
 
 	txo.AddressPkh = make([]byte, 20)
-	copy(txo.AddressPkh, scriptPk[addressOffset:addressOffset+20])
+	copy(txo.AddressPkh, pkScript[addressOffset:addressOffset+20])
 	return true
 }

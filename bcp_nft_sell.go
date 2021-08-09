@@ -5,11 +5,11 @@ import (
 )
 
 // nft sell
-func decodeNFTSell(scriptLen int, scriptPk []byte, txo *TxoData) bool {
+func decodeNFTSell(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	// dataLen := 0
-	if scriptPk[scriptLen-112-1-1-1] == OP_RETURN &&
-		scriptPk[scriptLen-112-1-1] == 0x4c &&
-		scriptPk[scriptLen-112-1] == 112 {
+	if pkScript[scriptLen-112-1-1-1] == OP_RETURN &&
+		pkScript[scriptLen-112-1-1] == 0x4c &&
+		pkScript[scriptLen-112-1] == 112 {
 		// nft sell v1
 		// NFT 的codehash + NFT的genesis + NFT index + 卖家地址 + 价格 + nftID + 1 + 0x00010001 即 65537
 		// <nft sell data> = <codehash(20 bytes)> + <genesis(20 bytes)> + <tokenIndex(8 bytes)> + <sellerAddress(20 bytes)> + <satoshisPrice(8 bytes)> + <nftID(20 bytes)> + <proto_version(4 bytes)> + <proto_type(4 bytes)> + <'sensible'(8 bytes)>
@@ -29,19 +29,19 @@ func decodeNFTSell(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 
 	txo.CodeType = CodeType_NFT_SELL
 
-	// txo.CodeHash = GetHash160(scriptPk[:scriptLen-dataLen])
+	// txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
 	txo.CodeHash = make([]byte, 20)
-	copy(txo.CodeHash, scriptPk[codehashOffset:codehashOffset+20])
+	copy(txo.CodeHash, pkScript[codehashOffset:codehashOffset+20])
 
 	txo.GenesisId = make([]byte, 20)
-	copy(txo.GenesisId, scriptPk[genesisOffset:genesisOffset+20])
+	copy(txo.GenesisId, pkScript[genesisOffset:genesisOffset+20])
 
-	txo.TokenIndex = binary.LittleEndian.Uint64(scriptPk[tokenIndexOffset : tokenIndexOffset+8])
+	txo.TokenIndex = binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8])
 
 	txo.AddressPkh = make([]byte, 20)
-	copy(txo.AddressPkh, scriptPk[addressOffset:addressOffset+20])
+	copy(txo.AddressPkh, pkScript[addressOffset:addressOffset+20])
 
 	// price
-	txo.Amount = binary.LittleEndian.Uint64(scriptPk[priceOffset : priceOffset+8])
+	txo.Amount = binary.LittleEndian.Uint64(pkScript[priceOffset : priceOffset+8])
 	return true
 }
