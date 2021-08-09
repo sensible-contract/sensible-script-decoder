@@ -45,9 +45,9 @@ func decodeUniqueV2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 
 	genesisOffset := protoTypeOffset - protoVersionLen - genesisIdLen
 	customDataSizeOffset := genesisOffset - 1 - 4
-	customDataSize := binary.LittleEndian.Uint32(scriptPk[customDataSizeOffset : customDataSizeOffset+4])
-	varint := getVarIntLen(int(customDataSize) + 21 + genesisIdLen)
-	dataLen := 1 + varint + int(customDataSize) + 21 + genesisIdLen // 0x.. + pushdata + data
+	customDataSize := int(binary.LittleEndian.Uint32(scriptPk[customDataSizeOffset : customDataSizeOffset+4]))
+	varint := getVarIntLen(customDataSize + 21 + genesisIdLen)
+	dataLen := 1 + varint + customDataSize + 21 + genesisIdLen // 0x.. + pushdata + data
 
 	if dataLen+1 >= scriptLen || scriptPk[scriptLen-dataLen-1] != OP_RETURN {
 		dataLen = 0
@@ -59,6 +59,9 @@ func decodeUniqueV2(scriptLen int, scriptPk []byte, txo *TxoData) bool {
 
 	// GenesisId is tokenIdHash
 	txo.GenesisId = GetHash160(scriptPk[genesisOffset : genesisOffset+genesisIdLen])
+
+	txo.CustomData = make([]byte, customDataSize)
+	copy(txo.CustomData, scriptPk[customDataSizeOffset-customDataSize:customDataSizeOffset])
 
 	txo.SensibleId = make([]byte, sensibleIdLen)
 	copy(txo.SensibleId, scriptPk[sensibleOffset:sensibleOffset+sensibleIdLen])

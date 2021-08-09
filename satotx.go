@@ -65,6 +65,7 @@ func ExtractPkScriptForTxo(pkScript, scriptType []byte) (txo *TxoData) {
 		SensibleId: empty,
 		AddressPkh: empty,
 		MetaTxId:   empty,
+		CustomData: empty,
 	}
 
 	if len(pkScript) == 0 {

@@ -15,6 +15,8 @@ type TxoDataTest struct {
 	SensibleIdHex string // GenesisTx outpoint
 	AddressPkhHex string
 
+	CustomData string // unique data
+
 	MetaTxIdHex     string // nft metatxid
 	MetaOutputIndex uint32
 	TokenIndex      uint64 // nft tokenIndex
@@ -57,6 +59,7 @@ func TestDecode(t *testing.T) {
 			GenesisIdHex:  hex.EncodeToString(txo.GenesisId),
 			SensibleIdHex: hex.EncodeToString(txo.SensibleId),
 			AddressPkhHex: hex.EncodeToString(txo.AddressPkh),
+			CustomData:    hex.EncodeToString(txo.CustomData),
 
 			MetaTxIdHex:     hex.EncodeToString(txo.MetaTxId),
 			MetaOutputIndex: txo.MetaOutputIndex,

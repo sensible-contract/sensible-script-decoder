@@ -25,6 +25,7 @@ type TxoData struct {
 	GenesisId  []byte // for search: codehash + genesis
 	SensibleId []byte // GenesisTx outpoint
 	AddressPkh []byte
+	CustomData []byte // unique data
 
 	MetaTxId        []byte // nft metatxid
 	MetaOutputIndex uint32
