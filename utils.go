@@ -62,11 +62,9 @@ func getVarIntLen(length int) int {
 	return res
 }
 
-func ReverseBytes(data []byte) (result []byte) {
-	dataLen := len(data)
-	result = make([]byte, dataLen)
-	for idx, b := range data {
-		result[dataLen-1-idx] = b
+func ReverseBytesInPlace(data []byte) {
+	n := len(data)
+	for i := 0; i < n/2; i++ {
+		data[i], data[n-1-i] = data[n-1-i], data[i]
 	}
-	return result
 }

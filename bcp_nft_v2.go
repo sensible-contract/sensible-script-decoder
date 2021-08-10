@@ -43,29 +43,34 @@ func decodeNFT(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	metaTxIdOffset := metaOutputIndexOffset - 32
 
 	txo.CodeType = CodeType_NFT
-	txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
 
-	txo.SensibleId = make([]byte, sensibleIdLen)
-	copy(txo.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
+	nft := &NFTData{
+		SensibleId:  make([]byte, sensibleIdLen),
+		TokenSupply: binary.LittleEndian.Uint64(pkScript[tokenSupplyOffset : tokenSupplyOffset+8]),
+		TokenIndex:  binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8]),
+	}
+	txo.NFT = nft
+
+	copy(nft.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
+	copy(nft.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
 
 	if useTokenIdHash {
 		// GenesisId is tokenIdHash
-		txo.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
+		nft.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
 	} else {
 		// for search: codehash + genesis
-		txo.GenesisId = txo.SensibleId
+		nft.GenesisId = nft.SensibleId
 	}
 
-	txo.MetaOutputIndex = binary.LittleEndian.Uint32(pkScript[metaOutputIndexOffset : metaOutputIndexOffset+4])
-	txo.MetaTxId = ReverseBytes(pkScript[metaTxIdOffset : metaTxIdOffset+32])
+	nft.MetaOutputIndex = binary.LittleEndian.Uint32(pkScript[metaOutputIndexOffset : metaOutputIndexOffset+4])
+	copy(nft.MetaTxId[:], pkScript[metaTxIdOffset:metaTxIdOffset+32])
+	ReverseBytesInPlace(nft.MetaTxId[:])
 
-	txo.TokenSupply = binary.LittleEndian.Uint64(pkScript[tokenSupplyOffset : tokenSupplyOffset+8])
-	txo.TokenIndex = binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8])
 	if pkScript[isGenesisOffset] == 1 {
-		txo.TokenIndex = txo.TokenSupply
+		nft.TokenIndex = nft.TokenSupply
 	}
 
-	txo.AddressPkh = make([]byte, 20)
-	copy(txo.AddressPkh, pkScript[addressOffset:addressOffset+20])
+	txo.HasAddress = true
+	copy(txo.AddressPkh[:], pkScript[addressOffset:addressOffset+20])
 	return true
 }

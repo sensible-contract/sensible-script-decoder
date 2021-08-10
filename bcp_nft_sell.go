@@ -29,19 +29,15 @@ func decodeNFTSell(scriptLen int, pkScript []byte, txo *TxoData) bool {
 
 	txo.CodeType = CodeType_NFT_SELL
 
+	nft := &NFTSellData{
+		TokenIndex: binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8]),
+		Price:      binary.LittleEndian.Uint64(pkScript[priceOffset : priceOffset+8]),
+	}
+	txo.NFTSell = nft
 	// txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
-	txo.CodeHash = make([]byte, 20)
-	copy(txo.CodeHash, pkScript[codehashOffset:codehashOffset+20])
-
-	txo.GenesisId = make([]byte, 20)
-	copy(txo.GenesisId, pkScript[genesisOffset:genesisOffset+20])
-
-	txo.TokenIndex = binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8])
-
-	txo.AddressPkh = make([]byte, 20)
-	copy(txo.AddressPkh, pkScript[addressOffset:addressOffset+20])
-
-	// price
-	txo.Amount = binary.LittleEndian.Uint64(pkScript[priceOffset : priceOffset+8])
+	copy(nft.CodeHash[:], pkScript[codehashOffset:codehashOffset+20])
+	copy(nft.GenesisId[:], pkScript[genesisOffset:genesisOffset+20])
+	copy(txo.AddressPkh[:], pkScript[addressOffset:addressOffset+20]) // seller
+	txo.HasAddress = true
 	return true
 }

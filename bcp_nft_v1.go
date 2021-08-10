@@ -14,17 +14,19 @@ func decodeNFTIssue(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	addressOffset := tokenIndexOffset - 20
 
 	dataLen := 1 + 1 + genesisIdLen + 1 + 37 // opreturn + pushdata + pushdata + data
-	txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
-	txo.GenesisId = make([]byte, genesisIdLen)
-	copy(txo.GenesisId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
 
-	txo.TokenSupply = binary.LittleEndian.Uint64(pkScript[tokenSupplyOffset : tokenSupplyOffset+8])
-	txo.TokenIndex = binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8])
+	nft := &NFTData{
+		GenesisId:   make([]byte, genesisIdLen),
+		TokenSupply: binary.LittleEndian.Uint64(pkScript[tokenSupplyOffset : tokenSupplyOffset+8]),
+		TokenIndex:  binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8]),
+	}
+	nft.TokenIndex = nft.TokenSupply
+	txo.NFT = nft
 
-	txo.TokenIndex = txo.TokenSupply
-
-	txo.AddressPkh = make([]byte, 20)
-	copy(txo.AddressPkh, pkScript[addressOffset:addressOffset+20])
+	copy(nft.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
+	copy(nft.GenesisId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
+	copy(txo.AddressPkh[:], pkScript[addressOffset:addressOffset+20])
+	txo.HasAddress = true
 	return true
 }
 
@@ -38,16 +40,17 @@ func decodeNFTTransfer(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	addressOffset := tokenIndexOffset - 20
 
 	dataLen := 1 + 1 + genesisIdLen + 1 + 61 // opreturn + pushdata + pushdata + data
-	txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
-	txo.GenesisId = make([]byte, genesisIdLen)
-	copy(txo.GenesisId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
 
-	txo.MetaTxId = make([]byte, 32)
-	copy(txo.MetaTxId, pkScript[metaTxIdOffset:metaTxIdOffset+32])
+	nft := &NFTData{
+		GenesisId:  make([]byte, genesisIdLen),
+		TokenIndex: binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8]),
+	}
+	txo.NFT = nft
 
-	txo.TokenIndex = binary.LittleEndian.Uint64(pkScript[tokenIndexOffset : tokenIndexOffset+8])
-
-	txo.AddressPkh = make([]byte, 20)
-	copy(txo.AddressPkh, pkScript[addressOffset:addressOffset+20])
+	copy(nft.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
+	copy(nft.GenesisId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
+	copy(nft.MetaTxId[:], pkScript[metaTxIdOffset:metaTxIdOffset+32])
+	copy(txo.AddressPkh[:], pkScript[addressOffset:addressOffset+20])
+	txo.HasAddress = true
 	return true
 }

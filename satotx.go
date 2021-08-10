@@ -59,32 +59,27 @@ func DecodeSensibleTxo(pkScript []byte, txo *TxoData) bool {
 }
 
 func ExtractPkScriptForTxo(pkScript, scriptType []byte) (txo *TxoData) {
-	txo = &TxoData{
-		CodeHash:   empty,
-		GenesisId:  empty,
-		SensibleId: empty,
-		AddressPkh: empty,
-		MetaTxId:   empty,
-		CustomData: empty,
-	}
+	txo = &TxoData{}
 
 	if len(pkScript) == 0 {
 		return txo
 	}
 
 	if isPubkeyHash(scriptType) {
-		txo.AddressPkh = make([]byte, 20)
-		copy(txo.AddressPkh, pkScript[3:23])
+		txo.HasAddress = true
+		copy(txo.AddressPkh[:], pkScript[3:23])
 		return txo
 	}
 
 	if isPayToScriptHash(scriptType) {
-		txo.AddressPkh = GetHash160(pkScript[2 : len(pkScript)-1])
+		txo.HasAddress = true
+		copy(txo.AddressPkh[:], GetHash160(pkScript[2:len(pkScript)-1]))
 		return txo
 	}
 
 	if isPubkey(scriptType) {
-		txo.AddressPkh = GetHash160(pkScript[1 : len(pkScript)-1])
+		txo.HasAddress = true
+		copy(txo.AddressPkh[:], GetHash160(pkScript[1:len(pkScript)-1]))
 		return txo
 	}
 

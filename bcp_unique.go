@@ -23,14 +23,17 @@ func decodeUnique(scriptLen int, pkScript []byte, txo *TxoData) bool {
 		return false
 	}
 	txo.CodeType = CodeType_UNIQUE
-	txo.AddressPkh = make([]byte, 20)
-	txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
+
+	uniq := &UniqueData{}
+	txo.Uniq = uniq
+
+	copy(uniq.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
 
 	// GenesisId is tokenIdHash
-	txo.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
+	uniq.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
 
-	txo.SensibleId = make([]byte, sensibleIdLen)
-	copy(txo.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
+	uniq.SensibleId = make([]byte, sensibleIdLen)
+	copy(uniq.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
 	return true
 }
 
@@ -54,16 +57,29 @@ func decodeUniqueV2(scriptLen int, pkScript []byte, txo *TxoData) bool {
 		return false
 	}
 	txo.CodeType = CodeType_UNIQUE
-	txo.AddressPkh = make([]byte, 20)
-	txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
+
+	uniq := &UniqueData{}
+	txo.Uniq = uniq
+
+	copy(uniq.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
 
 	// GenesisId is tokenIdHash
-	txo.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
+	uniq.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
 
-	txo.CustomData = make([]byte, customDataSize)
-	copy(txo.CustomData, pkScript[customDataSizeOffset-customDataSize:customDataSizeOffset])
+	uniq.CustomData = make([]byte, customDataSize)
+	copy(uniq.CustomData, pkScript[customDataSizeOffset-customDataSize:customDataSizeOffset])
 
-	txo.SensibleId = make([]byte, sensibleIdLen)
-	copy(txo.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
+	uniq.SensibleId = make([]byte, sensibleIdLen)
+	copy(uniq.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
+
+	if customDataSize == 84 || customDataSize == 64 {
+		// swap
+		uniq.Swap = &SwapData{
+			Token1Amount: binary.LittleEndian.Uint64(pkScript[customDataSizeOffset-24 : customDataSizeOffset-16]),
+			Token2Amount: binary.LittleEndian.Uint64(pkScript[customDataSizeOffset-16 : customDataSizeOffset-8]),
+			LpAmount:     binary.LittleEndian.Uint64(pkScript[customDataSizeOffset-8 : customDataSizeOffset]),
+		}
+	}
+
 	return true
 }

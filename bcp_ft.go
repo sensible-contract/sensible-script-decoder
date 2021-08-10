@@ -80,27 +80,30 @@ func decodeFT(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	nameOffset := symbolOffset - 20
 
 	txo.CodeType = CodeType_FT
-	txo.Decimal = uint8(pkScript[decimalOffset])
-	txo.Symbol = string(bytes.TrimRight(pkScript[symbolOffset:symbolOffset+10], "\x00"))
-	txo.Name = string(bytes.TrimRight(pkScript[nameOffset:nameOffset+20], "\x00"))
 
-	txo.Amount = binary.LittleEndian.Uint64(pkScript[amountOffset : amountOffset+8])
+	ft := &FTData{
+		Decimal: uint8(pkScript[decimalOffset]),
+		Symbol:  string(bytes.TrimRight(pkScript[symbolOffset:symbolOffset+10], "\x00")),
+		Name:    string(bytes.TrimRight(pkScript[nameOffset:nameOffset+20], "\x00")),
+		Amount:  binary.LittleEndian.Uint64(pkScript[amountOffset : amountOffset+8]),
+	}
+	txo.FT = ft
 
-	txo.AddressPkh = make([]byte, 20)
-	copy(txo.AddressPkh, pkScript[addressOffset:addressOffset+20])
+	txo.HasAddress = true
+	copy(txo.AddressPkh[:], pkScript[addressOffset:addressOffset+20])
 
-	txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
+	copy(ft.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
 	if useTokenIdHash {
-		txo.SensibleId = make([]byte, sensibleIdLen)
-		copy(txo.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
+		ft.SensibleId = make([]byte, sensibleIdLen)
+		copy(ft.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
 
 		// GenesisId is tokenIdHash
-		txo.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
+		ft.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
 	} else {
-		txo.GenesisId = make([]byte, genesisIdLen)
-		copy(txo.GenesisId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
+		ft.GenesisId = make([]byte, genesisIdLen)
+		copy(ft.GenesisId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
 
-		txo.SensibleId = txo.GenesisId
+		ft.SensibleId = ft.GenesisId
 	}
 	return true
 }
