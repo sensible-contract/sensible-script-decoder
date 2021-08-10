@@ -35,8 +35,10 @@ func decodeNFTSell(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	}
 	txo.NFTSell = nft
 	// txo.CodeHash = GetHash160(pkScript[:scriptLen-dataLen])
-	copy(nft.CodeHash[:], pkScript[codehashOffset:codehashOffset+20])
-	copy(nft.GenesisId[:], pkScript[genesisOffset:genesisOffset+20])
+
+	txo.GenesisIdLen = 20
+	copy(txo.CodeHash[:], pkScript[codehashOffset:codehashOffset+20])
+	copy(txo.GenesisId[:], pkScript[genesisOffset:genesisOffset+20])
 	copy(txo.AddressPkh[:], pkScript[addressOffset:addressOffset+20]) // seller
 	txo.HasAddress = true
 	return true

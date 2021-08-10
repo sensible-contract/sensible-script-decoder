@@ -92,18 +92,20 @@ func decodeFT(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	txo.HasAddress = true
 	copy(txo.AddressPkh[:], pkScript[addressOffset:addressOffset+20])
 
-	copy(ft.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
+	copy(txo.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
 	if useTokenIdHash {
 		ft.SensibleId = make([]byte, sensibleIdLen)
 		copy(ft.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
 
 		// GenesisId is tokenIdHash
-		ft.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
+		txo.GenesisIdLen = 20
+		copy(txo.GenesisId[:], GetHash160(pkScript[genesisOffset:genesisOffset+genesisIdLen]))
 	} else {
-		ft.GenesisId = make([]byte, genesisIdLen)
-		copy(ft.GenesisId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
+		ft.SensibleId = make([]byte, genesisIdLen)
+		copy(ft.SensibleId, pkScript[genesisOffset:genesisOffset+genesisIdLen])
 
-		ft.SensibleId = ft.GenesisId
+		txo.GenesisIdLen = uint8(genesisIdLen)
+		copy(txo.GenesisId[:], ft.SensibleId)
 	}
 	return true
 }

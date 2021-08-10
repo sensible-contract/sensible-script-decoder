@@ -51,15 +51,17 @@ func decodeNFT(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	}
 	txo.NFT = nft
 
-	copy(nft.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
+	copy(txo.CodeHash[:], GetHash160(pkScript[:scriptLen-dataLen]))
 	copy(nft.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
 
 	if useTokenIdHash {
 		// GenesisId is tokenIdHash
-		nft.GenesisId = GetHash160(pkScript[genesisOffset : genesisOffset+genesisIdLen])
+		txo.GenesisIdLen = 20
+		copy(txo.GenesisId[:], GetHash160(pkScript[genesisOffset:genesisOffset+genesisIdLen]))
 	} else {
 		// for search: codehash + genesis
-		nft.GenesisId = nft.SensibleId
+		txo.GenesisIdLen = uint8(sensibleIdLen)
+		copy(txo.GenesisId[:], nft.SensibleId)
 	}
 
 	nft.MetaOutputIndex = binary.LittleEndian.Uint32(pkScript[metaOutputIndexOffset : metaOutputIndexOffset+4])
