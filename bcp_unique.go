@@ -74,7 +74,9 @@ func decodeUniqueV2(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	uniq.SensibleId = make([]byte, sensibleIdLen)
 	copy(uniq.SensibleId, pkScript[sensibleOffset:sensibleOffset+sensibleIdLen])
 
-	if customDataSize == 84 || customDataSize == 64 {
+	if customDataSize == 84 || // XXX? + lpTokenID(20) + fetchTokenContractHash(20) + token1Amount + ...
+		customDataSize == 64 || // lpTokenID(20) + fetchTokenContractHash(20) + token1Amount + ...
+		customDataSize == 96 { // hashMerkleRoot(32B) + lpTokenID(20) + ...
 		// swap
 		uniq.Swap = &SwapData{
 			Token1Amount: binary.LittleEndian.Uint64(pkScript[customDataSizeOffset-24 : customDataSizeOffset-16]),
