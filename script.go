@@ -99,7 +99,7 @@ func IsLockingScriptOnlyEqual(pkScript []byte) bool {
 	if length == 0 {
 		return true
 	}
-	if pkScript[length-1] != 0x87 {
+	if pkScript[length-1] != OP_EQUAL {
 		return false
 	}
 	cnt, cntsize := SafeDecodeVarIntForScript(pkScript)
@@ -107,4 +107,29 @@ func IsLockingScriptOnlyEqual(pkScript []byte) bool {
 		return true
 	}
 	return false
+}
+
+func GetLockingScriptPushDropPosition(pkScript []byte) (pc int, ok bool) {
+	// test locking script
+	// "0b 3c4b616e7965323032303e 75"
+
+	length := len(pkScript)
+	if length == 0 {
+		return 0, false
+	}
+
+	if pkScript[0] > OP_16 {
+		return 0, false
+	}
+
+	cnt, cntsize := SafeDecodeVarIntForScript(pkScript)
+	pc = int(cnt + cntsize)
+	if length < pc+1 {
+		return 0, false
+	}
+
+	if pkScript[pc] != OP_DROP {
+		return 0, false
+	}
+	return pc + 1, true
 }
