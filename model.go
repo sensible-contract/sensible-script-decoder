@@ -13,6 +13,8 @@ const (
 
 	CodeType_SENSIBLE uint32 = 65536
 	CodeType_NFT_SELL uint32 = 65536 + 1
+
+	CodeType_NFT_AUCTION uint32 = 65536 + 4
 )
 
 var CodeTypeName []string = []string{
@@ -22,6 +24,7 @@ var CodeTypeName []string = []string{
 	"NFT",
 }
 
+// swap
 // 64/84 bytes
 type SwapData struct {
 	// fetchTokenContractHash + lpTokenID + lpTokenScriptCodeHash + Token1Amount + Token2Amount + lpAmount
@@ -30,6 +33,7 @@ type SwapData struct {
 	LpAmount     uint64
 }
 
+// ft
 type FTData struct {
 	SensibleId []byte // GenesisTx outpoint
 
@@ -55,6 +59,7 @@ func (u *FTData) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// nft
 type NFTData struct {
 	SensibleId []byte // GenesisTx outpoint
 
@@ -81,6 +86,7 @@ func (u *NFTData) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// nft sell
 type NFTSellData struct {
 	TokenIndex uint64 // nft tokenIndex
 	Price      uint64 // nft price
@@ -96,6 +102,51 @@ func (u *NFTSellData) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// nft auction
+// <nft auction data> = <rabinPubkeyHashArrayHash>(20bytes) + <timeRabinPubkeyHash>(20byte) +
+type NFTAuctionData struct {
+	SensibleId       [36]byte // Auction GenesisTx outpoint
+	NFTCodeHash      [20]byte
+	NFTID            [20]byte
+	FeeAmount        uint64
+	FeeAddressPkh    [20]byte
+	StartBsvPrice    uint64
+	SenderAddressPkh [20]byte
+	EndTimestamp     uint64
+	BidTimestamp     uint64
+	BidBsvPrice      uint64
+	BidderAddressPkh [20]byte
+}
+
+func (u *NFTAuctionData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		SensibleId       string
+		NFTCodeHash      string
+		NFTID            string
+		FeeAmount        uint64
+		FeeAddressPkh    string
+		StartBsvPrice    uint64
+		SenderAddressPkh string
+		EndTimestamp     uint64
+		BidTimestamp     uint64
+		BidBsvPrice      uint64
+		BidderAddressPkh string
+	}{
+		SensibleId:       hex.EncodeToString(u.SensibleId[:]),
+		NFTCodeHash:      hex.EncodeToString(u.NFTCodeHash[:]),
+		NFTID:            hex.EncodeToString(u.NFTID[:]),
+		FeeAmount:        u.FeeAmount,
+		FeeAddressPkh:    hex.EncodeToString(u.FeeAddressPkh[:]),
+		StartBsvPrice:    u.StartBsvPrice,
+		SenderAddressPkh: hex.EncodeToString(u.SenderAddressPkh[:]),
+		EndTimestamp:     u.EndTimestamp,
+		BidTimestamp:     u.BidTimestamp,
+		BidBsvPrice:      u.BidBsvPrice,
+		BidderAddressPkh: hex.EncodeToString(u.BidderAddressPkh[:]),
+	})
+}
+
+// unique
 type UniqueData struct {
 	SensibleId []byte // GenesisTx outpoint
 	CustomData []byte // unique data
@@ -125,6 +176,7 @@ type TxoData struct {
 	FT           *FTData
 	Uniq         *UniqueData
 	NFTSell      *NFTSellData
+	NFTAuction   *NFTAuctionData
 }
 
 func (u *TxoData) MarshalJSON() ([]byte, error) {
@@ -139,6 +191,7 @@ func (u *TxoData) MarshalJSON() ([]byte, error) {
 		FT           *FTData
 		Uniq         *UniqueData
 		NFTSell      *NFTSellData
+		NFTAuction   *NFTAuctionData
 	}{
 		CodeType:     u.CodeType,
 		CodeHash:     hex.EncodeToString(u.CodeHash[:]),
@@ -150,5 +203,6 @@ func (u *TxoData) MarshalJSON() ([]byte, error) {
 		FT:           u.FT,
 		Uniq:         u.Uniq,
 		NFTSell:      u.NFTSell,
+		NFTAuction:   u.NFTAuction,
 	})
 }

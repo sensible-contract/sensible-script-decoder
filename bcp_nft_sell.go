@@ -39,7 +39,7 @@ func decodeNFTSell(scriptLen int, pkScript []byte, txo *TxoData) bool {
 	txo.GenesisIdLen = 20
 	copy(txo.CodeHash[:], pkScript[codehashOffset:codehashOffset+20])
 	copy(txo.GenesisId[:], pkScript[genesisOffset:genesisOffset+20])
-	copy(txo.AddressPkh[:], pkScript[addressOffset:addressOffset+20]) // seller
 	txo.HasAddress = true
+	copy(txo.AddressPkh[:], pkScript[addressOffset:addressOffset+20]) // seller
 	return true
 }
