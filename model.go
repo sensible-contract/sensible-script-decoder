@@ -108,7 +108,8 @@ type NFTAuctionData struct {
 	SensibleId       [36]byte // Auction GenesisTx outpoint
 	NFTCodeHash      [20]byte
 	NFTID            [20]byte
-	FeeAmount        uint64
+	FeeAmount        uint64 // v1
+	FeeRate          byte   // v2
 	FeeAddressPkh    [20]byte
 	StartBsvPrice    uint64
 	SenderAddressPkh [20]byte
@@ -123,7 +124,8 @@ func (u *NFTAuctionData) MarshalJSON() ([]byte, error) {
 		SensibleId       string
 		NFTCodeHash      string
 		NFTID            string
-		FeeAmount        uint64
+		FeeAmount        uint64 // v1
+		FeeRate          byte   // v2
 		FeeAddressPkh    string
 		StartBsvPrice    uint64
 		SenderAddressPkh string
@@ -136,6 +138,7 @@ func (u *NFTAuctionData) MarshalJSON() ([]byte, error) {
 		NFTCodeHash:      hex.EncodeToString(u.NFTCodeHash[:]),
 		NFTID:            hex.EncodeToString(u.NFTID[:]),
 		FeeAmount:        u.FeeAmount,
+		FeeRate:          u.FeeRate,
 		FeeAddressPkh:    hex.EncodeToString(u.FeeAddressPkh[:]),
 		StartBsvPrice:    u.StartBsvPrice,
 		SenderAddressPkh: hex.EncodeToString(u.SenderAddressPkh[:]),
