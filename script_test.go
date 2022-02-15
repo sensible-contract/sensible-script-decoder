@@ -9,6 +9,7 @@ func TestScript(t *testing.T) {
 
 	scripts := []string{
 		"0b3c4b616e7965323032303e7588",
+		"6a3c4b616e7965323032303e0b00000000",
 	}
 	for line, scriptHex := range scripts {
 		if len(scriptHex) == 0 {
@@ -21,7 +22,8 @@ func TestScript(t *testing.T) {
 		}
 
 		pc, ok := GetLockingScriptPushDropPosition(script)
-
 		t.Logf("script: %d, ok: %v", pc, ok)
+		pc, ok = GetLockingScriptStatePosition(script)
+		t.Logf("state script: %d, ok: %v", pc, ok)
 	}
 }
