@@ -15,6 +15,8 @@ const (
 	CodeType_NFT_SELL uint32 = 65536 + 1
 
 	CodeType_NFT_AUCTION uint32 = 65536 + 4
+
+	CodeType_NFT_SELL_V2 uint32 = 65536 + 6
 )
 
 var CodeTypeName []string = []string{
@@ -102,6 +104,34 @@ func (u *NFTSellData) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// nft sell
+type NFTSellV2Data struct {
+	TokenIndex       uint64
+	Price            uint64
+	FeeAddressPkh    [20]byte
+	FeeRate          byte
+	SellerAddressPkh [20]byte
+	NFTID            [20]byte
+}
+
+func (u *NFTSellV2Data) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		TokenIndex       uint64
+		Price            uint64
+		FeeAddressPkh    string
+		FeeRate          byte
+		SellerAddressPkh string
+		NFTID            string
+	}{
+		TokenIndex:       u.TokenIndex,
+		Price:            u.Price,
+		FeeAddressPkh:    hex.EncodeToString(u.FeeAddressPkh[:]),
+		FeeRate:          u.FeeRate,
+		SellerAddressPkh: hex.EncodeToString(u.SellerAddressPkh[:]),
+		NFTID:            hex.EncodeToString(u.NFTID[:]),
+	})
+}
+
 // nft auction
 // <nft auction data> = <rabinPubkeyHashArrayHash>(20bytes) + <timeRabinPubkeyHash>(20byte) +
 type NFTAuctionData struct {
@@ -179,6 +209,7 @@ type TxoData struct {
 	FT           *FTData
 	Uniq         *UniqueData
 	NFTSell      *NFTSellData
+	NFTSellV2    *NFTSellV2Data
 	NFTAuction   *NFTAuctionData
 }
 
@@ -194,6 +225,7 @@ func (u *TxoData) MarshalJSON() ([]byte, error) {
 		FT           *FTData
 		Uniq         *UniqueData
 		NFTSell      *NFTSellData
+		NFTSellV2    *NFTSellV2Data
 		NFTAuction   *NFTAuctionData
 	}{
 		CodeType:     u.CodeType,
@@ -206,6 +238,7 @@ func (u *TxoData) MarshalJSON() ([]byte, error) {
 		FT:           u.FT,
 		Uniq:         u.Uniq,
 		NFTSell:      u.NFTSell,
+		NFTSellV2:    u.NFTSellV2,
 		NFTAuction:   u.NFTAuction,
 	})
 }

@@ -35,7 +35,8 @@ func DecodeSensibleTxo(pkScript []byte, txo *TxoData) bool {
 
 		case CodeType_NFT_SELL:
 			ret = decodeNFTSell(scriptLen, pkScript, txo)
-
+		case CodeType_NFT_SELL_V2:
+			ret = decodeNFTSellV2(scriptLen, pkScript, txo)
 		case CodeType_NFT_AUCTION:
 			ret = decodeNFTAuction(scriptLen, pkScript, txo)
 		default:
