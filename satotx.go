@@ -76,7 +76,7 @@ func ExtractPkScriptForTxo(pkScript, scriptType []byte) (txo *TxoData) {
 
 	if isPayToScriptHash(scriptType) {
 		txo.HasAddress = true
-		copy(txo.AddressPkh[:], GetHash160(pkScript[2:len(pkScript)-1]))
+		copy(txo.AddressPkh[:], pkScript[2:22])
 		return txo
 	}
 
