@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 )
 
-func hasSensibleFlag(pkScript []byte) bool {
+func HasSensibleFlag(pkScript []byte) bool {
 	return bytes.HasSuffix(pkScript, []byte("sensible")) || bytes.HasSuffix(pkScript, []byte("oraclesv"))
 }
 
@@ -16,7 +16,7 @@ func DecodeSensibleTxo(pkScript []byte, txo *TxoData) bool {
 	}
 
 	ret := false
-	if hasSensibleFlag(pkScript) {
+	if HasSensibleFlag(pkScript) {
 		protoTypeOffset := scriptLen - 8 - 4
 		protoType := binary.LittleEndian.Uint32(pkScript[protoTypeOffset : protoTypeOffset+4])
 
@@ -91,7 +91,7 @@ func ExtractPkScriptForTxo(pkScript, scriptType []byte) (txo *TxoData) {
 	// }
 
 	if IsOpreturn(scriptType) {
-		if hasSensibleFlag(pkScript) {
+		if HasSensibleFlag(pkScript) {
 			txo.CodeType = CodeType_SENSIBLE
 		}
 		return txo
